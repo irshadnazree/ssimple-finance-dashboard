@@ -79,6 +79,7 @@ export class GoogleDriveSync {
   private isAuthenticated = false;
   private readonly fileName = 'finance-dashboard-backup.json';
   private readonly encryptedFileName = 'finance-dashboard-encrypted.json';
+  private readonly tokenStorageKey = 'google_drive_tokens';
 
   constructor(private config: GoogleDriveConfig) {
     this.auth = {} as GoogleAuthInterface; // Mock implementation
@@ -94,15 +95,57 @@ export class GoogleDriveSync {
         const { tokens } = await oauth2Client.getToken(authCode);
         oauth2Client.setCredentials(tokens);
         
-        // Store tokens securely (in a real app, you'd encrypt these)
-        localStorage.setItem('google_drive_tokens', JSON.stringify(tokens));
+        // Ensure encryption is ready and store tokens encrypted in sessionStorage
+        if (!CryptoUtils.isEncryptionReady()) {
+          await CryptoUtils.initializeEncryption();
+        }
+        const encryptedTokens = CryptoUtils.encryptSensitiveData(tokens);
+        sessionStorage.setItem(this.tokenStorageKey, JSON.stringify(encryptedTokens));
+        
+        // Clean up any legacy storage
+        localStorage.removeItem(this.tokenStorageKey);
         
         this.auth = oauth2Client;
       } else {
-        // Try to use stored tokens
-        const storedTokens = localStorage.getItem('google_drive_tokens');
-        if (storedTokens) {
-          const tokens = JSON.parse(storedTokens);
+        // Try to use stored tokens (prefer encrypted sessionStorage)
+        const sessionEntry = sessionStorage.getItem(this.tokenStorageKey);
+        let tokens: unknown | null = null;
+        if (sessionEntry) {
+          try {
+            const maybeEncrypted: EncryptedData = JSON.parse(sessionEntry);
+            if ((maybeEncrypted as EncryptedData).data && (maybeEncrypted as EncryptedData).iv) {
+              if (!CryptoUtils.isEncryptionReady()) {
+                await CryptoUtils.initializeEncryption();
+              }
+              tokens = CryptoUtils.decryptSensitiveData(maybeEncrypted);
+            }
+          } catch {
+            // Not encrypted or parse failed; treat as invalid
+            tokens = null;
+          }
+        }
+        
+        // Migrate legacy plaintext localStorage if found
+        if (!tokens) {
+          const legacy = localStorage.getItem(this.tokenStorageKey);
+          if (legacy) {
+            try {
+              const legacyTokens = JSON.parse(legacy);
+              if (!CryptoUtils.isEncryptionReady()) {
+                await CryptoUtils.initializeEncryption();
+              }
+              const enc = CryptoUtils.encryptSensitiveData(legacyTokens);
+              sessionStorage.setItem(this.tokenStorageKey, JSON.stringify(enc));
+              localStorage.removeItem(this.tokenStorageKey);
+              tokens = legacyTokens;
+            } catch {
+              // ignore invalid legacy data
+              localStorage.removeItem(this.tokenStorageKey);
+            }
+          }
+        }
+
+        if (tokens) {
           const oauth2Client = new google.auth.OAuth2();
           oauth2Client.setCredentials(tokens);
           this.auth = oauth2Client;
@@ -132,7 +175,8 @@ export class GoogleDriveSync {
   }
 
   async signOut(): Promise<void> {
-    localStorage.removeItem('google_drive_tokens');
+    sessionStorage.removeItem(this.tokenStorageKey);
+    localStorage.removeItem(this.tokenStorageKey);
     this.isAuthenticated = false;
     this.drive = null;
   }
