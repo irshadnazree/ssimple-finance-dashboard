@@ -1,48 +1,58 @@
 import { Link } from '@tanstack/react-router'
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from './ui/navigation-menu'
+import { cn } from '../lib/utils'
 
 export default function Header() {
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold text-gray-900">Simple Finance</h1>
-          </div>
-          
-          <nav className="flex space-x-8">
-            <Link 
-              to="/" 
-              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              activeProps={{ className: "text-blue-600 bg-blue-50" }}
-            >
-              Dashboard
-            </Link>
-            
-            <Link 
-              to="/transactions" 
-              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              activeProps={{ className: "text-blue-600 bg-blue-50" }}
-            >
-              Transactions
-            </Link>
-            
-            <Link 
-              to="/budgets" 
-              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              activeProps={{ className: "text-blue-600 bg-blue-50" }}
-            >
-              Budgets
-            </Link>
-            
-            <Link 
-              to="/reports" 
-              className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              activeProps={{ className: "text-blue-600 bg-blue-50" }}
-            >
-              Reports
-            </Link>
-          </nav>
+    <header className="border-b">
+      <div className="flex h-16 items-center px-4">
+        <div className="mr-8">
+          <h1 className="text-xl font-bold">Simple Finance</h1>
         </div>
+        
+        <NavigationMenu>
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <Link to="/">
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Dashboard
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+            
+            <NavigationMenuItem>
+              <Link to="/transactions">
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Transactions
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+            
+            <NavigationMenuItem>
+              <Link to="/budgets">
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Budgets
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+            
+            <NavigationMenuItem>
+              <Link to="/reports">
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Reports
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
       </div>
     </header>
   )

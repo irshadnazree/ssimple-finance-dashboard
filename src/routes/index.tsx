@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import DashboardSummary from '../components/dashboard/DashboardSummary';
 import FinanceChart from '../components/charts/FinanceChart';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 
 export const Route = createFileRoute('/')({component: Dashboard,})
 
@@ -9,11 +11,11 @@ function Dashboard() {
   const [chartTimeframe, setChartTimeframe] = useState<'week' | 'month' | 'year'>('month');
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Overview of your financial health</p>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">Overview of your financial health</p>
         </div>
 
         <div className="space-y-8">
@@ -21,63 +23,65 @@ function Dashboard() {
           <DashboardSummary />
 
           {/* Chart Section */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Financial Trends</h2>
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Financial Trends</CardTitle>
                 <div className="flex space-x-2">
                   {(['week', 'month', 'year'] as const).map(timeframe => (
-                    <button
+                    <Button
                       key={timeframe}
-                      type="button"
+                      variant={chartTimeframe === timeframe ? 'default' : 'outline'}
+                      size="sm"
                       onClick={() => setChartTimeframe(timeframe)}
-                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                        chartTimeframe === timeframe
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
                     >
                       {timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
+            </CardHeader>
+            <CardContent>
               <FinanceChart timeframe={chartTimeframe} />
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button
-                type="button"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-center"
-              >
-                <div className="text-blue-600 text-2xl mb-2">+</div>
-                <div className="font-medium text-gray-900">Add Transaction</div>
-                <div className="text-sm text-gray-500">Record income or expense</div>
-              </button>
-              
-              <button
-                type="button"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-400 hover:bg-green-50 transition-colors text-center"
-              >
-                <div className="text-green-600 text-2xl mb-2">📊</div>
-                <div className="font-medium text-gray-900">Create Budget</div>
-                <div className="text-sm text-gray-500">Set spending limits</div>
-              </button>
-              
-              <button
-                type="button"
-                className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors text-center"
-              >
-                <div className="text-purple-600 text-2xl mb-2">📈</div>
-                <div className="font-medium text-gray-900">View Reports</div>
-                <div className="text-sm text-gray-500">Analyze your finances</div>
-              </button>
-            </div>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button
+                  variant="outline"
+                  className="h-auto p-6 flex flex-col items-center space-y-2"
+                >
+                  <div className="text-blue-600 text-2xl">+</div>
+                  <div className="font-medium">Add Transaction</div>
+                  <div className="text-sm text-muted-foreground">Record income or expense</div>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-auto p-6 flex flex-col items-center space-y-2"
+                >
+                  <div className="text-green-600 text-2xl">📊</div>
+                  <div className="font-medium">Create Budget</div>
+                  <div className="text-sm text-muted-foreground">Set spending limits</div>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-auto p-6 flex flex-col items-center space-y-2"
+                >
+                  <div className="text-purple-600 text-2xl">📈</div>
+                  <div className="font-medium">View Reports</div>
+                  <div className="text-sm text-muted-foreground">Analyze your finances</div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -3,6 +3,11 @@ import type { Transaction, Budget, Account } from '../../types/finance';
 import { DatabaseService } from '../../lib/database/db';
 import { transactionManager } from '../../lib/transactions/transactionManager';
 import { budgetManager } from '../../lib/budgets/budgetManager';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Progress } from '../ui/progress';
+import { Badge } from '../ui/badge';
 
 interface DashboardSummaryProps {
   className?: string;
@@ -112,88 +117,103 @@ export default function DashboardSummary({ className = '' }: DashboardSummaryPro
 
   if (loading) {
     return (
-      <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
-        <div className="animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-20 bg-gray-200 rounded" />
+      <Card className={className}>
+        <CardContent className="p-6">
+          <div className="animate-pulse">
+            <div className="h-4 bg-muted rounded w-1/4 mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-20 bg-muted rounded" />
               ))}
             </div>
-            <div className="h-32 bg-gray-200 rounded" />
+            <div className="h-32 bg-muted rounded" />
           </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
-        <div className="text-center text-red-600">
-          <p>Error loading dashboard: {error}</p>
-          <button
-            type="button"
-            onClick={loadSummaryData}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
+      <Card className={className}>
+        <CardContent className="p-6">
+          <Alert variant="destructive">
+            <AlertDescription>
+              Error loading dashboard: {error}
+            </AlertDescription>
+          </Alert>
+          <div className="mt-4 text-center">
+            <Button onClick={loadSummaryData} variant="outline">
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow ${className}`}>
-      <div className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Financial Overview</h2>
-        
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle>Financial Overview</CardTitle>
+        <CardDescription>Your financial summary at a glance</CardDescription>
+      </CardHeader>
+      <CardContent>
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-600">Total Balance</h3>
-            <p className="text-2xl font-bold text-blue-900">{formatCurrency(summaryData.totalBalance)}</p>
-          </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm font-medium text-blue-600">Total Balance</div>
+              <div className="text-2xl font-bold">{formatCurrency(summaryData.totalBalance)}</div>
+            </CardContent>
+          </Card>
           
-          <div className="bg-green-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-green-600">Monthly Income</h3>
-            <p className="text-2xl font-bold text-green-900">{formatCurrency(summaryData.monthlyIncome)}</p>
-          </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm font-medium text-green-600">Monthly Income</div>
+              <div className="text-2xl font-bold">{formatCurrency(summaryData.monthlyIncome)}</div>
+            </CardContent>
+          </Card>
           
-          <div className="bg-red-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-red-600">Monthly Expenses</h3>
-            <p className="text-2xl font-bold text-red-900">{formatCurrency(summaryData.monthlyExpenses)}</p>
-          </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm font-medium text-red-600">Monthly Expenses</div>
+              <div className="text-2xl font-bold">{formatCurrency(summaryData.monthlyExpenses)}</div>
+            </CardContent>
+          </Card>
           
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <h3 className="text-sm font-medium text-purple-600">Active Budgets</h3>
-            <p className="text-2xl font-bold text-purple-900">{summaryData.activeBudgets}</p>
-          </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-sm font-medium text-purple-600">Active Budgets</div>
+              <div className="text-2xl font-bold">{summaryData.activeBudgets}</div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Budget Alerts */}
         {summaryData.budgetAlerts.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-md font-medium text-gray-900 mb-3">Budget Alerts</h3>
-            <div className="space-y-2">
+            <h3 className="text-md font-medium mb-3">Budget Alerts</h3>
+            <div className="space-y-3">
               {summaryData.budgetAlerts.slice(0, 3).map(({ budget, percentUsed }) => (
-                <div key={budget.id} className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div>
-                    <p className="font-medium text-yellow-800">{budget.name}</p>
-                    <p className="text-sm text-yellow-600">
-                      {formatCurrency(budget.spent)} of {formatCurrency(budget.amount)} used
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-yellow-800">{percentUsed.toFixed(0)}%</p>
-                    <div className="w-16 h-2 bg-yellow-200 rounded-full mt-1">
-                      <div 
-                        className="h-2 bg-yellow-500 rounded-full" 
-                        style={{ width: `${Math.min(percentUsed, 100)}%` }}
-                      />
+                <Alert key={budget.id} className="border-yellow-200 bg-yellow-50">
+                  <AlertDescription>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="font-medium">{budget.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatCurrency(budget.spent)} of {formatCurrency(budget.amount)} used
+                        </div>
+                        <Progress value={percentUsed} className="mt-2 w-full" />
+                      </div>
+                      <div className="ml-4">
+                        <Badge variant={percentUsed > 90 ? "destructive" : "secondary"}>
+                          {percentUsed.toFixed(0)}%
+                        </Badge>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </AlertDescription>
+                </Alert>
               ))}
             </div>
           </div>
@@ -201,32 +221,41 @@ export default function DashboardSummary({ className = '' }: DashboardSummaryPro
 
         {/* Recent Transactions */}
         <div>
-          <h3 className="text-md font-medium text-gray-900 mb-3">Recent Transactions</h3>
+          <h3 className="text-md font-medium mb-3">Recent Transactions</h3>
           {summaryData.recentTransactions.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">No recent transactions</p>
+            <Card>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground text-center">No recent transactions</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-2">
               {summaryData.recentTransactions.map(transaction => (
-                <div key={transaction.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                  <div>
-                    <p className="font-medium text-gray-900">{transaction.description}</p>
-                    <p className="text-sm text-gray-500">
-                      {transaction.category} • {formatDate(transaction.date)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-bold ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                    </p>
-                  </div>
-                </div>
+                <Card key={transaction.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="font-medium">{transaction.description}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {transaction.category} • {formatDate(transaction.date)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge 
+                          variant={transaction.type === 'income' ? 'default' : 'secondary'}
+                          className={transaction.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                        >
+                          {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
