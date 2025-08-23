@@ -94,18 +94,26 @@ export class GoogleDriveSync {
         const { tokens } = await oauth2Client.getToken(authCode);
         oauth2Client.setCredentials(tokens);
         
-        // Store tokens securely (in a real app, you'd encrypt these)
-        localStorage.setItem('google_drive_tokens', JSON.stringify(tokens));
+        // Store tokens securely with encryption
+        const encryptedTokens = CryptoUtils.encryptSensitiveData(tokens);
+        localStorage.setItem('google_drive_tokens', JSON.stringify(encryptedTokens));
         
         this.auth = oauth2Client;
       } else {
         // Try to use stored tokens
         const storedTokens = localStorage.getItem('google_drive_tokens');
         if (storedTokens) {
-          const tokens = JSON.parse(storedTokens);
-          const oauth2Client = new google.auth.OAuth2();
-          oauth2Client.setCredentials(tokens);
-          this.auth = oauth2Client;
+          try {
+            const encryptedTokens = JSON.parse(storedTokens);
+            const tokens = CryptoUtils.decryptSensitiveData(encryptedTokens);
+            const oauth2Client = new google.auth.OAuth2();
+            oauth2Client.setCredentials(tokens);
+            this.auth = oauth2Client;
+          } catch (error) {
+            console.error('Failed to decrypt stored tokens:', error);
+            localStorage.removeItem('google_drive_tokens');
+            return false;
+          }
         } else {
           return false;
         }
@@ -246,9 +254,10 @@ export class GoogleDriveSync {
         const encryptedData = CryptoUtils.encryptFinancialData(syncData);
         content = JSON.stringify(encryptedData);
         fileName = this.encryptedFileName;
+      } else {
+        content = JSON.stringify(syncData);
+        fileName = this.fileName;
       }
-      content = JSON.stringify(syncData);
-      fileName = this.fileName;
 
       // Check if file already exists
       const existingFileId = await this.findFile(fileName);
@@ -285,8 +294,9 @@ export class GoogleDriveSync {
         // Decrypt the data
         const encryptedData: EncryptedData = JSON.parse(content);
         return CryptoUtils.decryptFinancialData(encryptedData) as SyncData;
-      }
+      } else {
         return JSON.parse(content) as SyncData;
+      }
     } catch (error) {
       console.error('Error downloading backup:', error);
       return null;
