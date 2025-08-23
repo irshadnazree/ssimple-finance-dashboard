@@ -4,7 +4,7 @@ import type { EncryptedData } from '../../types/finance';
 // Encryption key management
 class EncryptionManager {
   private static instance: EncryptionManager;
-  private encryptionKey: string | null = null;
+  private encryptionKey: CryptoJS.lib.WordArray | null = null;
 
   private constructor() {}
 
@@ -18,15 +18,18 @@ class EncryptionManager {
   // Initialize encryption key from user password or generate one
   async initializeKey(password?: string): Promise<void> {
     if (password) {
-      // Derive key from user password using PBKDF2
+      // Derive key from user password using PBKDF2 with SHA-256
       const salt = this.getOrCreateSalt();
-      this.encryptionKey = CryptoJS.PBKDF2(password, salt, {
+      const derived = CryptoJS.PBKDF2(password, salt, {
         keySize: 256 / 32,
-        iterations: 10000,
-      }).toString();
+        iterations: 200000,
+        hasher: CryptoJS.algo.SHA256,
+      });
+      this.encryptionKey = derived;
     } else {
-      // Generate a random key for local storage
-      this.encryptionKey = this.getOrCreateLocalKey();
+      // Generate or load a random key for local storage
+      const keyHex = this.getOrCreateLocalKey();
+      this.encryptionKey = CryptoJS.enc.Hex.parse(keyHex);
     }
   }
 
@@ -48,6 +51,14 @@ class EncryptionManager {
     return key;
   }
 
+  // Derive a MAC key from the encryption key to ensure integrity (encrypt-then-MAC)
+  private getMacKey(): CryptoJS.lib.WordArray {
+    if (!this.encryptionKey) {
+      throw new Error('Encryption key not initialized');
+    }
+    return CryptoJS.SHA256(this.encryptionKey);
+  }
+
   // Encrypt data
   encrypt<T>(data: T): EncryptedData {
     if (!this.encryptionKey) {
@@ -56,17 +67,22 @@ class EncryptionManager {
 
     const jsonString = JSON.stringify(data);
     const iv = CryptoJS.lib.WordArray.random(128 / 8);
-    
+
     const encrypted = CryptoJS.AES.encrypt(jsonString, this.encryptionKey, {
       iv: iv,
       mode: CryptoJS.mode.CBC,
       padding: CryptoJS.pad.Pkcs7,
     });
 
+    const macKey = this.getMacKey();
+    const macData = iv.clone().concat(encrypted.ciphertext);
+    const mac = CryptoJS.HmacSHA256(macData, macKey).toString();
+
     return {
       data: encrypted.toString(),
       iv: iv.toString(),
       timestamp: Date.now(),
+      mac,
     };
   }
 
@@ -77,6 +93,19 @@ class EncryptionManager {
     }
 
     try {
+      // Verify MAC if present (backward compatible if absent)
+      if (encryptedData.mac) {
+        const macKey = this.getMacKey();
+        const ivWordArray = CryptoJS.enc.Hex.parse(encryptedData.iv);
+        // Reconstruct ciphertext WordArray from base64-encoded OpenSSL format
+        const cipherParams = CryptoJS.lib.CipherParams.create({ ciphertext: CryptoJS.enc.Base64.parse(encryptedData.data) });
+        const macData = ivWordArray.clone().concat(cipherParams.ciphertext);
+        const computedMac = CryptoJS.HmacSHA256(macData, macKey).toString();
+        if (computedMac !== encryptedData.mac) {
+          throw new Error('Integrity check failed');
+        }
+      }
+
       const decrypted = CryptoJS.AES.decrypt(encryptedData.data, this.encryptionKey, {
         iv: CryptoJS.enc.Hex.parse(encryptedData.iv),
         mode: CryptoJS.mode.CBC,

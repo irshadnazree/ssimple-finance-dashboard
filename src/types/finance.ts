@@ -101,6 +101,7 @@ export interface EncryptedData {
   data: string; // encrypted JSON string
   iv: string; // initialization vector
   timestamp: number;
+  mac?: string;
 }
 
 export interface DataConflict {
