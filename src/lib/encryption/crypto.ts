@@ -22,7 +22,7 @@ class EncryptionManager {
       const salt = this.getOrCreateSalt();
       this.encryptionKey = CryptoJS.PBKDF2(password, salt, {
         keySize: 256 / 32,
-        iterations: 10000,
+        iterations: 100000, // Increased from 10000 to meet OWASP recommendations
       }).toString();
     } else {
       // Generate a random key for local storage
