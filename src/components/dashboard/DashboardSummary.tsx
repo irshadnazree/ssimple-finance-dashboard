@@ -153,109 +153,115 @@ export default function DashboardSummary({ className = '' }: DashboardSummaryPro
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle>Financial Overview</CardTitle>
-        <CardDescription>Your financial summary at a glance</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-sm font-medium text-blue-600">Total Balance</div>
-              <div className="text-2xl font-bold">{formatCurrency(summaryData.totalBalance)}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-sm font-medium text-green-600">Monthly Income</div>
-              <div className="text-2xl font-bold">{formatCurrency(summaryData.monthlyIncome)}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-sm font-medium text-red-600">Monthly Expenses</div>
-              <div className="text-2xl font-bold">{formatCurrency(summaryData.monthlyExpenses)}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-sm font-medium text-purple-600">Active Budgets</div>
-              <div className="text-2xl font-bold">{summaryData.activeBudgets}</div>
-            </CardContent>
-          </Card>
-        </div>
+    <div className={`space-y-8 ${className}`}>
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-2xl font-mono font-bold tracking-wider uppercase">Financial Overview</h1>
+        <div className="h-px bg-gradient-to-r from-primary via-primary/50 to-transparent" />
+      </div>
 
-        {/* Budget Alerts */}
-        {summaryData.budgetAlerts.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-md font-medium mb-3">Budget Alerts</h3>
-            <div className="space-y-3">
-              {summaryData.budgetAlerts.slice(0, 3).map(({ budget, percentUsed }) => (
-                <Alert key={budget.id} className="border-yellow-200 bg-yellow-50">
-                  <AlertDescription>
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium">{budget.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {formatCurrency(budget.spent)} of {formatCurrency(budget.amount)} used
-                        </div>
-                        <Progress value={percentUsed} className="mt-2 w-full" />
+      {/* Summary Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-card/60 backdrop-blur-sm p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+          <div className="relative z-10">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">Total Balance</div>
+            <div className="text-2xl font-mono font-bold text-primary">{formatCurrency(summaryData.totalBalance)}</div>
+          </div>
+        </div>
+        
+        <div className="bg-card/60 backdrop-blur-sm p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent" />
+          <div className="relative z-10">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">Monthly Income</div>
+            <div className="text-2xl font-mono font-bold text-accent">{formatCurrency(summaryData.monthlyIncome)}</div>
+          </div>
+        </div>
+        
+        <div className="bg-card/60 backdrop-blur-sm p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent" />
+          <div className="relative z-10">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">Monthly Expenses</div>
+            <div className="text-2xl font-mono font-bold text-destructive">{formatCurrency(summaryData.monthlyExpenses)}</div>
+          </div>
+        </div>
+        
+        <div className="bg-card/60 backdrop-blur-sm p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent" />
+          <div className="relative z-10">
+            <div className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">Active Budgets</div>
+            <div className="text-2xl font-mono font-bold text-secondary-foreground">{summaryData.activeBudgets}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Budget Alerts */}
+      {summaryData.budgetAlerts.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-mono font-bold tracking-wider uppercase">Budget Alerts</h2>
+            <div className="flex-1 h-px bg-gradient-to-r from-destructive/50 to-transparent" />
+          </div>
+          <div className="space-y-3">
+            {summaryData.budgetAlerts.slice(0, 3).map(({ budget, percentUsed }) => (
+              <Alert key={budget.id} variant={percentUsed > 90 ? "destructive" : "default"}>
+                <AlertDescription>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-mono font-medium uppercase tracking-wide">{budget.name}</div>
+                      <div className="text-xs font-mono text-muted-foreground mt-1">
+                        {formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}
                       </div>
-                      <div className="ml-4">
-                        <Badge variant={percentUsed > 90 ? "destructive" : "secondary"}>
-                          {percentUsed.toFixed(0)}%
-                        </Badge>
-                      </div>
+                      <Progress value={percentUsed} className="mt-3" />
                     </div>
-                  </AlertDescription>
-                </Alert>
-              ))}
-            </div>
+                    <div className="ml-6">
+                      <Badge variant={percentUsed > 90 ? "destructive" : "outline"}>
+                        {percentUsed.toFixed(0)}%
+                      </Badge>
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Transactions */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-mono font-bold tracking-wider uppercase">Recent Transactions</h2>
+          <div className="flex-1 h-px bg-gradient-to-r from-primary/50 to-transparent" />
+        </div>
+        {summaryData.recentTransactions.length === 0 ? (
+          <div className="bg-card/40 backdrop-blur-sm p-8 text-center">
+            <p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">No recent transactions</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {summaryData.recentTransactions.map(transaction => (
+              <div key={transaction.id} className="bg-card/40 backdrop-blur-sm p-4 hover:bg-card/60 transition-all duration-200 group">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="font-mono font-medium">{transaction.description}</div>
+                    <div className="text-xs font-mono text-muted-foreground mt-1 uppercase tracking-wider">
+                      {transaction.category} • {formatDate(transaction.date)}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge 
+                      variant="outline"
+                      className={transaction.type === 'income' ? 'border-accent/30 bg-accent/10 text-accent' : 'border-destructive/30 bg-destructive/10 text-destructive'}
+                    >
+                       {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                     </Badge>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-
-        {/* Recent Transactions */}
-        <div>
-          <h3 className="text-md font-medium mb-3">Recent Transactions</h3>
-          {summaryData.recentTransactions.length === 0 ? (
-            <Card>
-              <CardContent className="p-6">
-                <p className="text-muted-foreground text-center">No recent transactions</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {summaryData.recentTransactions.map(transaction => (
-                <Card key={transaction.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium">{transaction.description}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {transaction.category} • {formatDate(transaction.date)}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge 
-                          variant={transaction.type === 'income' ? 'default' : 'secondary'}
-                          className={transaction.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
-                        >
-                          {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -250,7 +250,7 @@ export default function FinanceChart({ timeframe, className = '' }: FinanceChart
                       
                       {/* Net value */}
                       <div className={`text-xs font-medium ${
-                        dataPoint.net >= 0 ? 'text-green-600' : 'text-red-600'
+                        dataPoint.net >= 0 ? 'text-green-400' : 'text-red-400'
                       }`}>
                         {dataPoint.net >= 0 ? '+' : ''}{formatCurrency(dataPoint.net)}
                       </div>
@@ -273,20 +273,20 @@ export default function FinanceChart({ timeframe, className = '' }: FinanceChart
             <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Total Income</p>
-                <p className="text-lg font-semibold text-green-600">
+                <p className="text-lg font-semibold text-green-400">
                   {formatCurrency(chartData.reduce((sum, d) => sum + d.income, 0))}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Total Expenses</p>
-                <p className="text-lg font-semibold text-red-600">
+                <p className="text-lg font-semibold text-red-400">
                   {formatCurrency(chartData.reduce((sum, d) => sum + d.expenses, 0))}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Net Total</p>
                 <p className={`text-lg font-semibold ${
-                  chartData.reduce((sum, d) => sum + d.net, 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                  chartData.reduce((sum, d) => sum + d.net, 0) >= 0 ? 'text-green-400' : 'text-red-400'
                 }`}>
                   {formatCurrency(chartData.reduce((sum, d) => sum + d.net, 0))}
                 </p>

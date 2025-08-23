@@ -1,26 +1,31 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 
 export const Route = createFileRoute('/transactions')({component: Transactions,})
 
 function Transactions() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-          <p className="text-gray-600">Manage your income and expenses</p>
+          <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
+          <p className="text-muted-foreground">Manage your income and expenses</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-center text-gray-500 py-12">
-            <div className="text-4xl mb-4">💳</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Transaction Management</h3>
-            <p className="text-gray-600 mb-4">This feature is coming soon!</p>
-            <p className="text-sm text-gray-500">
-              You'll be able to add, edit, and categorize your transactions here.
-            </p>
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Transaction Management</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-muted-foreground py-12">
+              <div className="text-4xl mb-4">💳</div>
+              <p className="mb-2">This feature is coming soon!</p>
+              <p className="text-sm">
+                You'll be able to manage and categorize your transactions here.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

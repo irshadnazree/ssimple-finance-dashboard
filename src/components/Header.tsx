@@ -12,10 +12,10 @@ import { cn } from '../lib/utils'
 
 export default function Header() {
   return (
-    <header className="border-b">
-      <div className="flex h-16 items-center px-4">
-        <div className="mr-8">
-          <h1 className="text-xl font-bold">Simple Finance</h1>
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-14 items-center px-6">
+        <div className="mr-6">
+          <h1 className="text-sm font-semibold tracking-tight text-foreground/80 font-mono">$ ssimple-finance</h1>
         </div>
         
         <NavigationMenu>

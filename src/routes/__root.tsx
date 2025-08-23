@@ -37,7 +37,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="dark bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground">
         <Header />
         {children}
         <TanstackDevtools
