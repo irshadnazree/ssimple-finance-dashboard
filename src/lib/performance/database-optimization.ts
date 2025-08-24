@@ -1,5 +1,5 @@
 import Dexie from 'dexie';
-import type { Transaction, Budget, Account } from '../../types/finance';
+import type { Transaction, Account } from '../../types/finance';
 import { PerformanceOptimizer } from './optimization';
 
 /**
@@ -7,7 +7,6 @@ import { PerformanceOptimizer } from './optimization';
  */
 export class OptimizedDatabaseService extends Dexie {
   transactions!: Dexie.Table<Transaction, string>;
-  budgets!: Dexie.Table<Budget, string>;
   accounts!: Dexie.Table<Account, string>;
 
   constructor() {
@@ -15,7 +14,6 @@ export class OptimizedDatabaseService extends Dexie {
     
     this.version(1).stores({
       transactions: '++id, date, category, type, account, amount, *tags',
-      budgets: '++id, name, category, period, startDate, endDate',
       accounts: '++id, name, type, balance'
     });
 
@@ -306,15 +304,13 @@ export class OptimizedDatabaseService extends Dexie {
    */
   async getDatabaseStats(): Promise<{
     transactionCount: number;
-    budgetCount: number;
     accountCount: number;
     oldestTransaction?: string;
     newestTransaction?: string;
     databaseSize?: number;
   }> {
-    const [transactionCount, budgetCount, accountCount] = await Promise.all([
+    const [transactionCount, accountCount] = await Promise.all([
       this.transactions.count(),
-      this.budgets.count(),
       this.accounts.count()
     ]);
     
@@ -325,13 +321,12 @@ export class OptimizedDatabaseService extends Dexie {
       const oldest = await this.transactions.orderBy('date').first();
       const newest = await this.transactions.orderBy('date').last();
       
-      oldestTransaction = oldest?.date;
-      newestTransaction = newest?.date;
+      oldestTransaction = oldest?.date instanceof Date ? oldest.date.toISOString() : oldest?.date;
+      newestTransaction = newest?.date instanceof Date ? newest.date.toISOString() : newest?.date;
     }
     
     return {
       transactionCount,
-      budgetCount,
       accountCount,
       oldestTransaction,
       newestTransaction

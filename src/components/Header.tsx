@@ -36,13 +36,6 @@ export default function Header() {
               </Link>
             </NavigationMenuItem>
             
-            <NavigationMenuItem>
-              <Link to="/budgets">
-                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                  Budgets
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
             
             <NavigationMenuItem>
               <Link to="/reports">

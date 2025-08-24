@@ -13,7 +13,6 @@ import { createServerRootRoute } from '@tanstack/react-start/server'
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as BudgetsRouteImport } from './routes/budgets'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo.start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo.start.api-request'
@@ -29,11 +28,6 @@ const TransactionsRoute = TransactionsRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BudgetsRoute = BudgetsRouteImport.update({
-  id: '/budgets',
-  path: '/budgets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -59,7 +53,6 @@ const ApiDemoNamesServerRoute = ApiDemoNamesServerRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/budgets': typeof BudgetsRoute
   '/reports': typeof ReportsRoute
   '/transactions': typeof TransactionsRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -67,7 +60,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/budgets': typeof BudgetsRoute
   '/reports': typeof ReportsRoute
   '/transactions': typeof TransactionsRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -76,7 +68,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/budgets': typeof BudgetsRoute
   '/reports': typeof ReportsRoute
   '/transactions': typeof TransactionsRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -86,7 +77,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/budgets'
     | '/reports'
     | '/transactions'
     | '/demo/start/api-request'
@@ -94,7 +84,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/budgets'
     | '/reports'
     | '/transactions'
     | '/demo/start/api-request'
@@ -102,7 +91,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/budgets'
     | '/reports'
     | '/transactions'
     | '/demo/start/api-request'
@@ -111,7 +99,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BudgetsRoute: typeof BudgetsRoute
   ReportsRoute: typeof ReportsRoute
   TransactionsRoute: typeof TransactionsRoute
   DemoStartApiRequestRoute: typeof DemoStartApiRequestRoute
@@ -155,13 +142,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/budgets': {
-      id: '/budgets'
-      path: '/budgets'
-      fullPath: '/budgets'
-      preLoaderRoute: typeof BudgetsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -199,7 +179,6 @@ declare module '@tanstack/react-start/server' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BudgetsRoute: BudgetsRoute,
   ReportsRoute: ReportsRoute,
   TransactionsRoute: TransactionsRoute,
   DemoStartApiRequestRoute: DemoStartApiRequestRoute,

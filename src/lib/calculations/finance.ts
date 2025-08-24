@@ -1,7 +1,6 @@
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfYear, endOfYear, isWithinInterval, addDays, addWeeks, addMonths, addYears } from 'date-fns';
 import type {
   Transaction,
-  Budget,
   Account,
   FinancialSummary,
   ChartTimeframe,
@@ -60,44 +59,6 @@ export namespace ValidationUtils {
         field: 'date',
         message: 'Date is required',
         code: 'DATE_REQUIRED',
-      });
-    }
-
-    return errors;
-  }
-
-  export function validateBudget(budget: Partial<Budget>): ValidationError[] {
-    const errors: ValidationError[] = [];
-
-    if (!budget.name || budget.name.trim().length === 0) {
-      errors.push({
-        field: 'name',
-        message: 'Budget name is required',
-        code: 'NAME_REQUIRED',
-      });
-    }
-
-    if (!budget.amount || budget.amount <= 0) {
-      errors.push({
-        field: 'amount',
-        message: 'Budget amount must be greater than 0',
-        code: 'AMOUNT_REQUIRED',
-      });
-    }
-
-    if (!budget.category) {
-      errors.push({
-        field: 'category',
-        message: 'Category is required',
-        code: 'CATEGORY_REQUIRED',
-      });
-    }
-
-    if (!budget.period) {
-      errors.push({
-        field: 'period',
-        message: 'Budget period is required',
-        code: 'PERIOD_REQUIRED',
       });
     }
 
@@ -249,65 +210,9 @@ export namespace FinanceCalculations {
     return income - expenses;
   }
 
-  export function calculateBudgetUtilization(budgets: Budget[], transactions: Transaction[]): number {
-    if (budgets.length === 0) return 0;
-
-    let totalBudgeted = 0;
-    let totalSpent = 0;
-
-    for (const budget of budgets) {
-      const { start, end } = getBudgetPeriodDates(budget);
-      const categoryExpenses = transactions
-        .filter(t => 
-          t.type === 'expense' &&
-          t.category === budget.category &&
-          isWithinInterval(new Date(t.date), { start, end })
-        )
-        .reduce((sum, t) => sum + t.amount, 0);
-
-      totalBudgeted += budget.amount;
-      totalSpent += categoryExpenses;
-    }
-
-    return totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
-  }
-
-  // Get budget period dates
-  export function getBudgetPeriodDates(budget: Budget): { start: Date; end: Date } {
-    const now = new Date();
-    
-    switch (budget.period) {
-      case 'weekly': {
-        return {
-          start: startOfWeek(now),
-          end: endOfWeek(now)
-        };
-      }
-      case 'monthly': {
-        return {
-          start: startOfMonth(now),
-          end: endOfMonth(now)
-        };
-      }
-      case 'yearly': {
-        return {
-          start: startOfYear(now),
-          end: endOfYear(now)
-        };
-      }
-      default: {
-        return {
-          start: startOfMonth(now),
-          end: endOfMonth(now)
-        };
-      }
-    }
-  }
-
   export function generateFinancialSummary(
     transactions: Transaction[],
-    accounts: Account[],
-    budgets: Budget[]
+    accounts: Account[]
   ): FinancialSummary {
     const now = new Date();
     const startOfCurrentMonth = startOfMonth(now);
@@ -317,14 +222,12 @@ export namespace FinanceCalculations {
     const monthlyExpenses = calculateTotalExpenses(transactions, startOfCurrentMonth, endOfCurrentMonth);
     const netWorth = calculateNetWorth(accounts);
     const cashFlow = monthlyIncome - monthlyExpenses;
-    const budgetUtilization = calculateBudgetUtilization(budgets, transactions);
 
     return {
       totalIncome: monthlyIncome,
       totalExpenses: monthlyExpenses,
       netWorth,
       cashFlow,
-      budgetUtilization,
       period: 'month',
        periodStart: startOfCurrentMonth,
        periodEnd: endOfCurrentMonth,

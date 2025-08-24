@@ -147,14 +147,12 @@ export namespace CryptoUtils {
   // Encrypt financial data before storing
   export function encryptFinancialData(data: {
     transactions?: unknown[];
-    budgets?: unknown[];
     accounts?: unknown[];
     preferences?: unknown;
   }): EncryptedData {
     // Remove sensitive fields and encrypt the rest
     const sanitizedData = {
       transactions: data.transactions,
-      budgets: data.budgets,
       accounts: data.accounts,
       preferences: data.preferences,
     };
@@ -165,7 +163,6 @@ export namespace CryptoUtils {
   // Decrypt financial data after retrieval
   export function decryptFinancialData(encryptedData: EncryptedData): {
     transactions?: unknown[];
-    budgets?: unknown[];
     accounts?: unknown[];
     preferences?: unknown;
   } {

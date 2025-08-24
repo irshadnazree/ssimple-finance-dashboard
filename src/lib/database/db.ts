@@ -1,12 +1,11 @@
 import Dexie from 'dexie';
-import type { Transaction, Budget, Account, Category, UserPreferences } from '../../types/finance';
+import type { Transaction, Account, Category, UserPreferences } from '../../types/finance';
 
 /**
  * Main database service for the finance dashboard
  */
 export class FinanceDashboard extends Dexie {
 	transactions!: Dexie.Table<Transaction, string>;
-	budgets!: Dexie.Table<Budget, string>;
 	accounts!: Dexie.Table<Account, string>;
 	categories!: Dexie.Table<Category, string>;
 	preferences!: Dexie.Table<UserPreferences, string>;
@@ -17,7 +16,6 @@ export class FinanceDashboard extends Dexie {
 		// Define schemas
 		this.version(1).stores({
 			transactions: '++id, amount, category, date, type, account, currency, myr, incomeExpense, note, account2, createdAt, updatedAt',
-			budgets: '++id, name, category, period, startDate, endDate, isActive',
 			accounts: '++id, name, type, balance, currency, isActive',
 			categories: '++id, name, type, isDefault',
 			preferences: '++id'
@@ -81,50 +79,7 @@ export const DatabaseService = {
 		await db.transactions.delete(id);
 	},
 
-	// Budget operations
-	async createBudget(
-		budget: Omit<Budget, "id" | "spent" | "createdAt" | "updatedAt">
-	): Promise<Budget> {
-		const now = new Date();
-		const newBudget: Budget = {
-			...budget,
-			id: crypto.randomUUID(),
-			spent: 0,
-			createdAt: now,
-			updatedAt: now
-		};
-		
-		await db.budgets.add(newBudget);
-		return newBudget;
-	},
 
-	async getBudgets(): Promise<Budget[]> {
-		return await db.budgets.toArray();
-	},
-
-	async getBudget(id: string): Promise<Budget | undefined> {
-		return await db.budgets.get(id);
-	},
-
-	async updateBudget(
-		id: string,
-		updates: Partial<Omit<Budget, "id" | "createdAt">>
-	): Promise<Budget> {
-		const updatedBudget = {
-			...updates,
-			updatedAt: new Date()
-		};
-		await db.budgets.update(id, updatedBudget);
-		const result = await db.budgets.get(id);
-		if (!result) {
-			throw new Error(`Budget with id ${id} not found`);
-		}
-		return result;
-	},
-
-	async deleteBudget(id: string): Promise<void> {
-		await db.budgets.delete(id);
-	},
 
 	// Account operations
 	async createAccount(

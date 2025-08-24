@@ -42,19 +42,7 @@ export interface RecurringTransaction {
 	nextDue: Date;
 }
 
-export interface Budget {
-	id: string;
-	name: string;
-	category: string;
-	amount: number;
-	period: "weekly" | "monthly" | "yearly";
-	startDate: Date;
-	endDate?: Date;
-	spent: number;
-	isActive: boolean;
-	createdAt: Date;
-	updatedAt: Date;
-}
+
 
 export interface Account {
 	id: string;
@@ -91,7 +79,6 @@ export interface FinancialSummary {
 	totalExpenses: number;
 	netWorth: number;
 	cashFlow: number;
-	budgetUtilization: number;
 	period: "week" | "month" | "year";
 	periodStart: Date;
 	periodEnd: Date;
@@ -111,7 +98,7 @@ export interface UserPreferences {
 	dateFormat: string;
 	theme: "light" | "dark" | "system";
 	defaultAccount: string;
-	budgetAlerts: boolean;
+
 	syncSettings: {
 		autoSync: boolean;
 		syncInterval: number; // minutes
@@ -127,9 +114,9 @@ export interface EncryptedData {
 
 export interface DataConflict {
 	id: string;
-	type: "transaction" | "budget" | "account" | "category";
-	localData: Transaction | Budget | Account | Category;
-	cloudData: Transaction | Budget | Account | Category;
+	type: "transaction" | "account" | "category";
+	localData: Transaction | Account | Category;
+	cloudData: Transaction | Account | Category;
 	conflictDate: Date;
 	resolved: boolean;
 }

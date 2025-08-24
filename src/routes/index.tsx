@@ -78,21 +78,6 @@ function Dashboard() {
 								variant="outline"
 								className="h-auto p-8 flex flex-col items-center gap-4 bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-all duration-300 group"
 							>
-								<div className="text-accent text-3xl font-mono font-bold group-hover:scale-110 transition-transform duration-200">
-									📊
-								</div>
-								<div className="font-mono font-medium uppercase tracking-wide">
-									Create Budget
-								</div>
-								<div className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-									Set spending limits
-								</div>
-							</Button>
-
-							<Button
-								variant="outline"
-								className="h-auto p-8 flex flex-col items-center gap-4 bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-all duration-300 group"
-							>
 								<div className="text-secondary-foreground text-3xl font-mono font-bold group-hover:scale-110 transition-transform duration-200">
 									📈
 								</div>
