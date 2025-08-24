@@ -3,6 +3,8 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanstackDevtools } from '@tanstack/react-devtools'
 
 import Header from '../components/Header'
+import { Toaster } from '../components/ui/toaster'
+import ErrorBoundary from '../components/ui/error-boundary'
 
 import appCss from '../styles.css?url'
 
@@ -38,19 +40,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="dark bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground">
-        <Header />
-        {children}
-        <TanstackDevtools
-          config={{
-            position: 'bottom-left',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        <ErrorBoundary>
+          <Header />
+          {children}
+          <Toaster />
+          <TanstackDevtools
+            config={{
+              position: 'bottom-left',
+            }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+        </ErrorBoundary>
         <Scripts />
       </body>
     </html>

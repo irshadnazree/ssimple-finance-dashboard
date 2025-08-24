@@ -12,6 +12,11 @@ export interface Transaction {
 	createdAt: Date;
 	updatedAt: Date;
 	
+	// Transaction status management
+	status: "pending" | "completed" | "cancelled" | "failed";
+	processedAt?: Date;
+	errorMessage?: string;
+	
 	// New fields to match the provided JSON format
 	note?: string | null;
 	currency: string;

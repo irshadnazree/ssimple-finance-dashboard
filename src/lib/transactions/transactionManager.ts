@@ -69,10 +69,16 @@ export class TransactionManager {
 
 	// CRUD Operations
 	async createTransaction(
-		transactionData: Omit<Transaction, "id" | "createdAt" | "updatedAt">,
+		transactionData: Omit<Transaction, "id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage">,
 	): Promise<Transaction> {
+		// Add default status for new transactions
+		const transactionWithStatus = {
+			...transactionData,
+			status: 'pending' as const
+		};
+
 		// Validate transaction data
-		const validationErrors = await this.validateTransaction(transactionData);
+		const validationErrors = await this.validateTransaction(transactionWithStatus);
 		if (validationErrors.length > 0) {
 			throw new Error(
 				`Validation failed: ${validationErrors.map((e) => e.message).join(", ")}`,
@@ -81,10 +87,16 @@ export class TransactionManager {
 
 		// Create transaction
 		const transaction =
-			await DatabaseService.createTransaction(transactionData);
+			await DatabaseService.createTransaction(transactionWithStatus);
 
-		// Update account balance
-		await this.updateAccountBalance(transaction);
+		// Process the transaction asynchronously
+		setTimeout(async () => {
+			try {
+				await this.processTransaction(transaction);
+			} catch (error) {
+				console.error('Failed to process transaction:', error);
+			}
+		}, 0);
 
 		return transaction;
 	}
@@ -142,6 +154,102 @@ export class TransactionManager {
 		return transactions.find((t) => t.id === id);
 	}
 
+	// Transaction Status Management
+	async updateTransactionStatus(
+		id: string,
+		status: Transaction['status'],
+		errorMessage?: string
+	): Promise<Transaction | undefined> {
+		const updates: Partial<Transaction> = {
+			status,
+			processedAt: status === 'completed' || status === 'failed' || status === 'cancelled' ? new Date() : undefined,
+			errorMessage: status === 'failed' ? errorMessage : undefined
+		};
+
+		return await this.updateTransaction(id, updates);
+	}
+
+	async getTransactionsByStatus(status: Transaction['status']): Promise<Transaction[]> {
+		const transactions = await DatabaseService.getTransactions();
+		return transactions.filter(t => t.status === status);
+	}
+
+	async getPendingTransactions(): Promise<Transaction[]> {
+		return await this.getTransactionsByStatus('pending');
+	}
+
+	async getFailedTransactions(): Promise<Transaction[]> {
+		return await this.getTransactionsByStatus('failed');
+	}
+
+	async retryFailedTransaction(id: string): Promise<Transaction | undefined> {
+		const transaction = await this.getTransaction(id);
+		if (!transaction || transaction.status !== 'failed') {
+			throw new Error('Transaction not found or not in failed state');
+		}
+
+		try {
+			// Reset status to pending and clear error message
+			const updatedTransaction = await this.updateTransactionStatus(id, 'pending');
+			
+			// Process the transaction again
+			if (updatedTransaction) {
+				await this.processTransaction(updatedTransaction);
+			}
+			
+			return updatedTransaction;
+		} catch (error) {
+			// Mark as failed again if processing fails
+			await this.updateTransactionStatus(id, 'failed', error instanceof Error ? error.message : 'Unknown error');
+			throw error;
+		}
+	}
+
+	async processTransaction(transaction: Transaction): Promise<void> {
+		try {
+			// Mark as processing
+			await this.updateTransactionStatus(transaction.id, 'pending');
+			
+			// Simulate processing time for demo purposes
+			await new Promise(resolve => setTimeout(resolve, 1000));
+			
+			// Update account balance if not already done
+			if (transaction.status !== 'completed') {
+				await this.updateAccountBalance(transaction);
+			}
+			
+			// Mark as completed
+			await this.updateTransactionStatus(transaction.id, 'completed');
+		} catch (error) {
+			// Mark as failed
+			await this.updateTransactionStatus(transaction.id, 'failed', error instanceof Error ? error.message : 'Processing failed');
+			throw error;
+		}
+	}
+
+	async bulkUpdateTransactionStatus(
+		ids: string[],
+		status: Transaction['status'],
+		errorMessage?: string
+	): Promise<{ successful: string[]; failed: Array<{ id: string; error: string }> }> {
+		const successful: string[] = [];
+		const failed: Array<{ id: string; error: string }> = [];
+
+		for (const id of ids) {
+			try {
+				await this.updateTransactionStatus(id, status, errorMessage);
+				successful.push(id);
+			} catch (error) {
+				failed.push({
+					id,
+					error: error instanceof Error ? error.message : 'Unknown error'
+				});
+			}
+		}
+
+		return { successful, failed };
+	}
+
 	async getTransactions(filters?: TransactionFilters): Promise<Transaction[]> {
 
 
@@ -170,7 +278,7 @@ export class TransactionManager {
 
 	// Bulk Operations
 	async createBulkTransactions(
-		transactions: Array<Omit<Transaction, "id" | "createdAt" | "updatedAt">>,
+		transactions: Array<Omit<Transaction, "id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage">>,
 	): Promise<BulkTransactionResult> {
 		const result: BulkTransactionResult = {
 			successful: [],
@@ -184,7 +292,12 @@ export class TransactionManager {
 
 		for (const transactionData of transactions) {
 			try {
-				const transaction = await this.createTransaction(transactionData);
+				// Add default status for bulk transactions
+				const transactionWithStatus = {
+					...transactionData,
+					status: 'pending' as const
+				};
+				const transaction = await DatabaseService.createTransaction(transactionWithStatus);
 				result.successful.push(transaction);
 				result.summary.successful++;
 			} catch (error) {
@@ -415,7 +528,7 @@ export class TransactionManager {
 				try {
 					const transactionData: Omit<
 					Transaction,
-					"id" | "createdAt" | "updatedAt"
+					"id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage"
 				> = {
 					amount: transaction.amount,
 					description: transaction.description,
@@ -602,7 +715,7 @@ export class TransactionManager {
 		format: "json" | "csv" | "external-json" = "json",
 	): Promise<BulkTransactionResult> {
 		let transactions: Array<
-			Omit<Transaction, "id" | "createdAt" | "updatedAt">
+			Omit<Transaction, "id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage">
 		>;
 
 		if (format === "csv") {
@@ -668,7 +781,7 @@ export class TransactionManager {
 	// Updated CSV parsing to handle new fields
 	private parseCSV(
 		csvData: string,
-	): Array<Omit<Transaction, "id" | "createdAt" | "updatedAt">> {
+	): Array<Omit<Transaction, "id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage">> {
 		const lines = csvData.trim().split("\n");
 		const headers = lines[0].split(",").map((h) => h.replace(/"/g, ""));
 

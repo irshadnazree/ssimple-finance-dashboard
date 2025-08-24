@@ -14,9 +14,7 @@ interface OAuth2ClientInterface {
 
 interface DriveInterface {
 	files: {
-		list: (
-			options: unknown,
-		) => Promise<{
+		list: (options: unknown) => Promise<{
 			data: {
 				files?: Array<{ id?: string; name?: string; modifiedTime?: string }>;
 			};
@@ -52,15 +50,14 @@ import type {
 	Account,
 	Category,
 	DataConflict,
-	EncryptedData,
+	ExternalTransactionFormat,
 	SyncStatus,
 	Transaction,
 	UserPreferences,
 } from "../../types/finance";
 import { DatabaseService, db } from "../database/db";
-import { CryptoUtils, type FinancialData } from '../encryption/crypto';
-import { DataTransformUtils } from '../transactions/dataTransform';
-import type { ExternalTransactionFormat } from '../../types/finance';
+import { CryptoUtils, type FinancialData } from "../encryption/crypto";
+import { DataTransformUtils } from "../transactions/dataTransform";
 
 export interface SyncData {
 	transactions: ExternalTransactionFormat[]; // Use external format for backups
@@ -108,7 +105,7 @@ export class GoogleDriveSync {
 				return true;
 			}
 			// Check if already authenticated
-			const storedTokens = localStorage.getItem('google_drive_tokens');
+			const storedTokens = localStorage.getItem("google_drive_tokens");
 			if (storedTokens) {
 				this.auth.setCredentials(JSON.parse(storedTokens));
 				this.drive = google.drive({ auth: this.auth });
@@ -117,7 +114,7 @@ export class GoogleDriveSync {
 			}
 			return false;
 		} catch (error) {
-			console.error('Authentication failed:', error);
+			console.error("Authentication failed:", error);
 			return false;
 		}
 	}
@@ -125,7 +122,7 @@ export class GoogleDriveSync {
 	getAuthUrl(): string {
 		if (this.auth.generateAuthUrl) {
 			return this.auth.generateAuthUrl({
-				access_type: 'offline',
+				access_type: "offline",
 				scope: this.config.scopes,
 				redirect_uri: this.config.redirectUri,
 			});
@@ -134,7 +131,7 @@ export class GoogleDriveSync {
 	}
 
 	async signOut(): Promise<void> {
-		localStorage.removeItem('google_drive_tokens');
+		localStorage.removeItem("google_drive_tokens");
 		this.isAuthenticated = false;
 		this.drive = null;
 	}
@@ -147,16 +144,16 @@ export class GoogleDriveSync {
 	private async findFile(fileName: string): Promise<string | null> {
 		try {
 			if (!this.drive) return null;
-			
+
 			const response = await this.drive.files.list({
 				q: `name='${fileName}' and trashed=false`,
-				fields: 'files(id, name, modifiedTime)',
+				fields: "files(id, name, modifiedTime)",
 			});
-			
+
 			const files = response.data.files;
 			return files && files.length > 0 ? files[0].id || null : null;
 		} catch (error) {
-			console.error('Error finding file:', error);
+			console.error("Error finding file:", error);
 			return null;
 		}
 	}
@@ -168,12 +165,12 @@ export class GoogleDriveSync {
 	): Promise<string | null> {
 		try {
 			if (!this.drive) return null;
-			
+
 			const media = {
-				mimeType: 'application/json',
+				mimeType: "application/json",
 				body: content,
 			};
-			
+
 			if (fileId) {
 				// Update existing file
 				const response = await this.drive.files.update({
@@ -189,7 +186,7 @@ export class GoogleDriveSync {
 			});
 			return response.data.id || null;
 		} catch (error) {
-			console.error('Error uploading file:', error);
+			console.error("Error uploading file:", error);
 			return null;
 		}
 	}
@@ -197,15 +194,15 @@ export class GoogleDriveSync {
 	private async downloadFile(fileId: string): Promise<string | null> {
 		try {
 			if (!this.drive) return null;
-			
+
 			const response = await this.drive.files.get({
 				fileId,
-				alt: 'media',
+				alt: "media",
 			});
-			
+
 			return response.data;
 		} catch (error) {
-			console.error('Error downloading file:', error);
+			console.error("Error downloading file:", error);
 			return null;
 		}
 	}
@@ -214,19 +211,21 @@ export class GoogleDriveSync {
 	async uploadBackup(encrypted = true): Promise<boolean> {
 		try {
 			if (!this.isAuthenticated) {
-				throw new Error('Not authenticated with Google Drive');
+				throw new Error("Not authenticated with Google Drive");
 			}
 
 			// Get all data from local database
-			const [transactions, accounts, categories, preferences] = await Promise.all([
-				DatabaseService.getTransactions(),
-				DatabaseService.getAccounts(),
-				DatabaseService.getCategories(),
-				DatabaseService.getPreferences(),
-			]) as [Transaction[], Account[], Category[], UserPreferences | null];
+			const [transactions, accounts, categories, preferences] =
+				(await Promise.all([
+					DatabaseService.getTransactions(),
+					DatabaseService.getAccounts(),
+					DatabaseService.getCategories(),
+					DatabaseService.getPreferences(),
+				])) as [Transaction[], Account[], Category[], UserPreferences | null];
 
 			// Convert transactions to external format for backup
-			const externalTransactions = DataTransformUtils.toExternalFormatArray(transactions);
+			const externalTransactions =
+				DataTransformUtils.toExternalFormatArray(transactions);
 
 			const syncData: SyncData = {
 				transactions: externalTransactions,
@@ -234,50 +233,57 @@ export class GoogleDriveSync {
 				categories,
 				preferences,
 				lastModified: new Date().toISOString(),
-				version: '1.0.0',
+				version: "1.0.0",
 			};
 
 			// Convert SyncData to FinancialData for encryption
 			const financialData: FinancialData = {
-				transactions: syncData.transactions.map(tx => ({
-					id: tx.Date || '',
+				transactions: syncData.transactions.map((tx) => ({
+					status: "completed", // Add required status field
+					id: tx.Date || "",
 					amount: tx.Amount,
-					description: tx.Description || '',
-					category: tx.Category || 'Other',
+					description: tx.Description || "",
+					category: tx.Category || "Other",
 					date: new Date(tx.Date),
-					type: tx['Income/Expense'] === 'Income' ? 'income' : 'expense',
-					account: tx.Account || '',
+					type: tx["Income/Expense"] === "Income" ? "income" : "expense",
+					account: tx.Account || "",
 					tags: [],
 					recurring: undefined,
 					createdAt: new Date(),
 					updatedAt: new Date(),
-					note: tx.Note || '',
-					currency: tx.Currency || 'MYR',
+					note: tx.Note || "",
+					currency: tx.Currency || "MYR",
 					myr: tx.MYR,
-					incomeExpense: tx['Income/Expense'],
-					account2: tx.Account_2
+					incomeExpense: tx["Income/Expense"],
+					account2: tx.Account_2,
 				})),
 				accounts: syncData.accounts,
-				preferences: syncData.preferences || null
+				preferences: syncData.preferences || null,
 			};
-			
+
 			const encryptedData = CryptoUtils.encryptFinancialData(financialData);
 			const fileName = encrypted ? this.encryptedFileName : this.fileName;
 
 			// Check if file already exists
 			const existingFileId = await this.findFile(fileName);
-			
+
 			// Upload or update the file
-			const content = encrypted ? JSON.stringify(encryptedData) : JSON.stringify(syncData, null, 2);
-			const fileId = await this.uploadFile(fileName, content, existingFileId || undefined);
-			
+			const content = encrypted
+				? JSON.stringify(encryptedData)
+				: JSON.stringify(syncData, null, 2);
+			const fileId = await this.uploadFile(
+				fileName,
+				content,
+				existingFileId || undefined,
+			);
+
 			if (fileId) {
-				localStorage.setItem('last_backup_date', new Date().toISOString());
+				localStorage.setItem("last_backup_date", new Date().toISOString());
 				return true;
 			}
 			return false;
 		} catch (error) {
-			console.error('Backup upload failed:', error);
+			console.error("Backup upload failed:", error);
 			return false;
 		}
 	}
@@ -285,12 +291,12 @@ export class GoogleDriveSync {
 	async downloadBackup(encrypted = true): Promise<SyncData | null> {
 		try {
 			if (!this.isAuthenticated) {
-				throw new Error('Not authenticated with Google Drive');
+				throw new Error("Not authenticated with Google Drive");
 			}
 
 			const fileName = encrypted ? this.encryptedFileName : this.fileName;
 			const fileId = await this.findFile(fileName);
-			
+
 			if (!fileId) {
 				return null;
 			}
@@ -303,33 +309,33 @@ export class GoogleDriveSync {
 			if (encrypted) {
 				const encryptedData = JSON.parse(content);
 				const financialData = CryptoUtils.decryptFinancialData(encryptedData);
-				
+
 				// Convert FinancialData back to SyncData
 				return {
-					transactions: financialData.transactions.map(tx => ({
-						Date: tx.date.toISOString().split('T')[0],
+					transactions: financialData.transactions.map((tx) => ({
+						Date: tx.date.toISOString().split("T")[0],
 						Account: tx.account,
 						Category: tx.category,
 						Subcategory: tx.subcategory || null,
 						Note: tx.note || null,
 						MYR: tx.myr || tx.amount,
-						'Income/Expense': tx.type === 'income' ? 'Income' : 'Expense',
+						"Income/Expense": tx.type === "income" ? "Income" : "Expense",
 						Description: tx.description || null,
 						Amount: tx.amount,
 						Currency: tx.currency,
-						Account_2: tx.account2 || 0
+						Account_2: tx.account2 || 0,
 					})),
 					accounts: financialData.accounts,
 					categories: [], // Default empty categories
 					preferences: financialData.preferences,
 					lastModified: new Date().toISOString(),
-					version: '1.0.0'
+					version: "1.0.0",
 				} as SyncData;
 			}
-			
+
 			return JSON.parse(content) as SyncData;
 		} catch (error) {
-			console.error('Backup download failed:', error);
+			console.error("Backup download failed:", error);
 			return null;
 		}
 	}
@@ -340,7 +346,7 @@ export class GoogleDriveSync {
 	): Promise<SyncResult> {
 		try {
 			if (!this.isAuthenticated) {
-				throw new Error('Not authenticated with Google Drive');
+				throw new Error("Not authenticated with Google Drive");
 			}
 
 			// Get local data
@@ -357,7 +363,8 @@ export class GoogleDriveSync {
 			]);
 
 			// Convert local transactions to external format for comparison
-			const externalLocalTransactions = DataTransformUtils.toExternalFormatArray(localTransactions);
+			const externalLocalTransactions =
+				DataTransformUtils.toExternalFormatArray(localTransactions);
 
 			const localData: SyncData = {
 				transactions: externalLocalTransactions,
@@ -407,10 +414,10 @@ export class GoogleDriveSync {
 				syncedAt: new Date(),
 			};
 		} catch (error) {
-			console.error('Sync failed:', error);
+			console.error("Sync failed:", error);
 			return {
 				success: false,
-				error: error instanceof Error ? error.message : 'Unknown error',
+				error: error instanceof Error ? error.message : "Unknown error",
 				syncedAt: new Date(),
 			};
 		}
@@ -424,14 +431,14 @@ export class GoogleDriveSync {
 
 		// Check for transaction conflicts
 		for (const localTx of localData.transactions) {
-			const cloudTx = cloudData.transactions.find(t => {
+			const cloudTx = cloudData.transactions.find((t) => {
 				// Compare by Date and Description since external format doesn't have id
 				return t.Date === localTx.Date && t.Description === localTx.Description;
 			});
 			if (cloudTx && JSON.stringify(localTx) !== JSON.stringify(cloudTx)) {
 				conflicts.push({
 					id: `transaction-${localTx.Date}-${localTx.Description}`,
-					type: 'transaction',
+					type: "transaction",
 					localData: localTx as unknown as Transaction | Account | Category,
 					cloudData: cloudTx as unknown as Transaction | Account | Category,
 					conflictDate: new Date(),
@@ -442,11 +449,11 @@ export class GoogleDriveSync {
 
 		// Check for account conflicts
 		for (const localAcc of localData.accounts) {
-			const cloudAcc = cloudData.accounts.find(a => a.id === localAcc.id);
+			const cloudAcc = cloudData.accounts.find((a) => a.id === localAcc.id);
 			if (cloudAcc && JSON.stringify(localAcc) !== JSON.stringify(cloudAcc)) {
 				conflicts.push({
 					id: `account-${localAcc.id}`,
-					type: 'account',
+					type: "account",
 					localData: localAcc as Transaction | Account | Category,
 					cloudData: cloudAcc as Transaction | Account | Category,
 					conflictDate: new Date(),
@@ -457,11 +464,11 @@ export class GoogleDriveSync {
 
 		// Check for category conflicts
 		for (const localCat of localData.categories) {
-			const cloudCat = cloudData.categories.find(c => c.id === localCat.id);
+			const cloudCat = cloudData.categories.find((c) => c.id === localCat.id);
 			if (cloudCat && JSON.stringify(localCat) !== JSON.stringify(cloudCat)) {
 				conflicts.push({
 					id: `category-${localCat.id}`,
-					type: 'category',
+					type: "category",
 					localData: localCat as Transaction | Account | Category,
 					cloudData: cloudCat as Transaction | Account | Category,
 					conflictDate: new Date(),
@@ -480,7 +487,9 @@ export class GoogleDriveSync {
 		await db.categories.clear();
 
 		// Convert external transactions back to internal format and add to database
-		const internalTransactions = DataTransformUtils.fromExternalFormatArray(cloudData.transactions);
+		const internalTransactions = DataTransformUtils.fromExternalFormatArray(
+			cloudData.transactions,
+		);
 		for (const transaction of internalTransactions) {
 			await DatabaseService.createTransaction(transaction);
 		}
@@ -509,8 +518,8 @@ export class GoogleDriveSync {
 		// Merge transactions (cloud takes precedence for conflicts)
 		const mergedTransactions = [...localData.transactions];
 		for (const cloudTx of cloudData.transactions) {
-			const existingIndex = mergedTransactions.findIndex(t => 
-				t.Date === cloudTx.Date && t.Description === cloudTx.Description
+			const existingIndex = mergedTransactions.findIndex(
+				(t) => t.Date === cloudTx.Date && t.Description === cloudTx.Description,
 			);
 			if (existingIndex >= 0) {
 				// Replace with cloud version
@@ -523,7 +532,8 @@ export class GoogleDriveSync {
 
 		// Clear and rebuild transactions
 		await db.transactions.clear();
-		const internalTransactions = DataTransformUtils.fromExternalFormatArray(mergedTransactions);
+		const internalTransactions =
+			DataTransformUtils.fromExternalFormatArray(mergedTransactions);
 		for (const transaction of internalTransactions) {
 			await DatabaseService.createTransaction(transaction);
 		}
@@ -531,7 +541,9 @@ export class GoogleDriveSync {
 		// Merge accounts
 		const mergedAccounts = [...localData.accounts];
 		for (const cloudAcc of cloudData.accounts) {
-			const existingIndex = mergedAccounts.findIndex(a => a.id === cloudAcc.id);
+			const existingIndex = mergedAccounts.findIndex(
+				(a) => a.id === cloudAcc.id,
+			);
 			if (existingIndex >= 0) {
 				mergedAccounts[existingIndex] = cloudAcc;
 			} else {
@@ -548,7 +560,9 @@ export class GoogleDriveSync {
 		// Merge categories
 		const mergedCategories = [...localData.categories];
 		for (const cloudCat of cloudData.categories) {
-			const existingIndex = mergedCategories.findIndex(c => c.id === cloudCat.id);
+			const existingIndex = mergedCategories.findIndex(
+				(c) => c.id === cloudCat.id,
+			);
 			if (existingIndex >= 0) {
 				mergedCategories[existingIndex] = cloudCat;
 			} else {
@@ -578,30 +592,36 @@ export class GoogleDriveSync {
 	): Promise<boolean> {
 		try {
 			const conflicts = await this.getConflicts();
-			const conflict = conflicts.find(c => c.id === conflictId);
-			
+			const conflict = conflicts.find((c) => c.id === conflictId);
+
 			if (!conflict) {
 				return false;
 			}
 
-			const dataToUse = resolution === "local" ? conflict.localData : conflict.cloudData;
+			const dataToUse =
+				resolution === "local" ? conflict.localData : conflict.cloudData;
 
 			// Apply the resolution based on conflict type
 			switch (conflict.type) {
 				case "transaction": {
 					// Convert external format to internal if needed
-					const internalTx = DataTransformUtils.fromExternalFormat(dataToUse as unknown as ExternalTransactionFormat);
-					const fullTx: Transaction = { 
-						...internalTx, 
+					const internalTx = DataTransformUtils.fromExternalFormat(
+						dataToUse as unknown as ExternalTransactionFormat,
+					);
+					const fullTx: Transaction = {
+						...internalTx,
 						id: crypto.randomUUID(),
 						createdAt: new Date(),
-						updatedAt: new Date()
+						updatedAt: new Date(),
 					};
 					await DatabaseService.updateTransaction(fullTx.id, fullTx);
 					break;
 				}
 				case "account":
-					await DatabaseService.updateAccount((dataToUse as Account).id, dataToUse as Partial<Omit<Account, "id" | "createdAt">>);
+					await DatabaseService.updateAccount(
+						(dataToUse as Account).id,
+						dataToUse as Partial<Omit<Account, "id" | "createdAt">>,
+					);
 					break;
 				case "category":
 					// Categories don't have update method in current implementation
@@ -609,18 +629,21 @@ export class GoogleDriveSync {
 			}
 
 			// Remove the resolved conflict from storage
-			const remainingConflicts = conflicts.filter(c => c.id !== conflictId);
-			localStorage.setItem('sync_conflicts', JSON.stringify(remainingConflicts));
+			const remainingConflicts = conflicts.filter((c) => c.id !== conflictId);
+			localStorage.setItem(
+				"sync_conflicts",
+				JSON.stringify(remainingConflicts),
+			);
 
 			return true;
 		} catch (error) {
-			console.error('Error resolving conflict:', error);
+			console.error("Error resolving conflict:", error);
 			return false;
 		}
 	}
 
 	async getConflicts(): Promise<DataConflict[]> {
-		const stored = localStorage.getItem('sync_conflicts');
+		const stored = localStorage.getItem("sync_conflicts");
 		return stored ? JSON.parse(stored) : [];
 	}
 
@@ -641,16 +664,16 @@ export class GoogleDriveSync {
 	}
 
 	private getLastSyncDate(): Date | null {
-		const stored = localStorage.getItem('last_sync_date');
+		const stored = localStorage.getItem("last_sync_date");
 		return stored ? new Date(stored) : null;
 	}
 
 	private getAutoSyncSetting(): boolean {
-		return localStorage.getItem('auto_sync_enabled') === 'true';
+		return localStorage.getItem("auto_sync_enabled") === "true";
 	}
 
 	async setAutoSync(enabled: boolean): Promise<void> {
-		localStorage.setItem('auto_sync_enabled', enabled.toString());
+		localStorage.setItem("auto_sync_enabled", enabled.toString());
 	}
 }
 

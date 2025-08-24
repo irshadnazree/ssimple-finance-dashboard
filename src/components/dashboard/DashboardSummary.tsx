@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DatabaseService } from "../../lib/database/db";
+import { DatabaseInitService } from "../../lib/database/init";
 import { transactionManager } from "../../lib/transactions/transactionManager";
 import type { Transaction } from "../../types/finance";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -38,6 +39,9 @@ export default function DashboardSummary({
 		try {
 			setLoading(true);
 			setError(null);
+
+			// Ensure database is initialized with default data
+			await DatabaseInitService.initialize();
 
 			// Get current month date range
 			const now = new Date();
@@ -101,15 +105,15 @@ export default function DashboardSummary({
 	if (loading) {
 		return (
 			<Card className={className}>
-				<CardContent className="p-6">
+				<CardContent className="p-3 sm:p-6">
 					<div className="animate-pulse">
-						<div className="h-4 bg-muted rounded w-1/4 mb-4" />
-						<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-							{[1, 2, 3, 4].map((i) => (
-								<div key={i} className="h-20 bg-muted rounded" />
+						<div className="h-3 sm:h-4 bg-muted rounded w-1/4 mb-3 sm:mb-4" />
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+							{[1, 2, 3].map((i) => (
+								<div key={i} className="h-16 sm:h-20 bg-muted rounded" />
 							))}
 						</div>
-						<div className="h-32 bg-muted rounded" />
+						<div className="h-24 sm:h-32 bg-muted rounded" />
 					</div>
 				</CardContent>
 			</Card>
@@ -119,14 +123,14 @@ export default function DashboardSummary({
 	if (error) {
 		return (
 			<Card className={className}>
-				<CardContent className="p-6">
+				<CardContent className="p-3 sm:p-6">
 					<Alert variant="destructive">
-						<AlertDescription>
+						<AlertDescription className="text-sm">
 							Error loading dashboard: {error}
 						</AlertDescription>
 					</Alert>
-					<div className="mt-4 text-center">
-						<Button onClick={loadSummaryData} variant="outline">
+					<div className="mt-3 sm:mt-4 text-center">
+						<Button onClick={loadSummaryData} variant="outline" size="sm">
 							Retry
 						</Button>
 					</div>
@@ -136,48 +140,48 @@ export default function DashboardSummary({
 	}
 
 	return (
-		<div className={`space-y-8 ${className}`}>
+		<div className={`space-y-4 sm:space-y-6 lg:space-y-8 ${className}`}>
 			{/* Header */}
 			<div className="space-y-2">
-				<h1 className="text-2xl font-mono font-bold tracking-wider uppercase">
+				<h1 className="text-lg sm:text-xl lg:text-2xl font-mono font-bold tracking-wider uppercase">
 					Financial Overview
 				</h1>
 				<div className="h-px bg-gradient-to-r from-primary via-primary/50 to-transparent" />
 			</div>
 
 			{/* Summary Grid */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<div className="bg-card/60 backdrop-blur-sm p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+				<div className="bg-card/60 backdrop-blur-sm p-4 sm:p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
 					<div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
 					<div className="relative z-10">
 						<div className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">
 							Total Balance
 						</div>
-						<div className="text-2xl font-mono font-bold text-primary">
+						<div className="text-xl sm:text-2xl font-mono font-bold text-primary">
 							{formatCurrency(summaryData.totalBalance)}
 						</div>
 					</div>
 				</div>
 
-				<div className="bg-card/60 backdrop-blur-sm p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
+				<div className="bg-card/60 backdrop-blur-sm p-4 sm:p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
 					<div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent" />
 					<div className="relative z-10">
 						<div className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">
 							Monthly Income
 						</div>
-						<div className="text-2xl font-mono font-bold text-accent">
+						<div className="text-xl sm:text-2xl font-mono font-bold text-accent">
 							{formatCurrency(summaryData.monthlyIncome)}
 						</div>
 					</div>
 				</div>
 
-				<div className="bg-card/60 backdrop-blur-sm p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
+				<div className="bg-card/60 backdrop-blur-sm p-4 sm:p-6 relative overflow-hidden group hover:bg-card/80 transition-all duration-300">
 					<div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent" />
 					<div className="relative z-10">
 						<div className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">
 							Monthly Expenses
 						</div>
-						<div className="text-2xl font-mono font-bold text-destructive">
+						<div className="text-xl sm:text-2xl font-mono font-bold text-destructive">
 							{formatCurrency(summaryData.monthlyExpenses)}
 						</div>
 					</div>
@@ -189,16 +193,16 @@ export default function DashboardSummary({
 
 
 			{/* Recent Transactions */}
-			<div className="space-y-4">
-				<div className="flex items-center gap-4">
-					<h2 className="text-lg font-mono font-bold tracking-wider uppercase">
+			<div className="space-y-3 sm:space-y-4">
+				<div className="flex items-center gap-2 sm:gap-4">
+					<h2 className="text-base sm:text-lg font-mono font-bold tracking-wider uppercase">
 						Recent Transactions
 					</h2>
 					<div className="flex-1 h-px bg-gradient-to-r from-primary/50 to-transparent" />
 				</div>
 				{summaryData.recentTransactions.length === 0 ? (
-					<div className="bg-card/40 backdrop-blur-sm p-8 text-center">
-						<p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">
+					<div className="bg-card/40 backdrop-blur-sm p-4 sm:p-8 text-center">
+						<p className="text-muted-foreground font-mono text-xs sm:text-sm uppercase tracking-wider">
 							No recent transactions
 						</p>
 					</div>
@@ -207,24 +211,24 @@ export default function DashboardSummary({
 						{summaryData.recentTransactions.map((transaction) => (
 							<div
 								key={transaction.id}
-								className="bg-card/40 backdrop-blur-sm p-4 hover:bg-card/60 transition-all duration-200 group"
+								className="bg-card/40 backdrop-blur-sm p-3 sm:p-4 hover:bg-card/60 transition-all duration-200 group"
 							>
-								<div className="flex items-center justify-between">
-									<div className="flex-1">
-										<div className="font-mono font-medium">
+								<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+									<div className="flex-1 min-w-0">
+										<div className="font-mono font-medium text-sm sm:text-base truncate">
 											{transaction.description}
 										</div>
 										<div className="text-xs font-mono text-muted-foreground mt-1 uppercase tracking-wider">
 											{transaction.category} • {formatDate(transaction.date)}
 										</div>
 									</div>
-									<div className="text-right">
+									<div className="text-left sm:text-right flex-shrink-0">
 										<Badge
 											variant="outline"
 											className={
 												transaction.type === "income"
-													? "border-accent/30 bg-accent/10 text-accent"
-													: "border-destructive/30 bg-destructive/10 text-destructive"
+													? "border-accent/30 bg-accent/10 text-accent text-xs sm:text-sm"
+													: "border-destructive/30 bg-destructive/10 text-destructive text-xs sm:text-sm"
 											}
 										>
 											{transaction.type === "income" ? "+" : "-"}
