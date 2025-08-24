@@ -58,7 +58,7 @@ import type {
 	UserPreferences,
 } from "../../types/finance";
 import { DatabaseService, db } from "../database/db";
-import { CryptoUtils } from "../encryption/crypto";
+import { CryptoUtils, type FinancialData } from '../encryption/crypto';
 import { DataTransformUtils } from '../transactions/dataTransform';
 import type { ExternalTransactionFormat } from '../../types/finance';
 
@@ -237,27 +237,38 @@ export class GoogleDriveSync {
 				version: '1.0.0',
 			};
 
-			let content: string;
-			let fileName: string;
-
-			if (encrypted) {
-				// Encrypt the data
-				const encryptedData = CryptoUtils.encryptFinancialData({
-					transactions: syncData.transactions,
-					accounts: syncData.accounts,
-					preferences: syncData.preferences,
-				});
-				content = JSON.stringify(encryptedData, null, 2);
-				fileName = this.encryptedFileName;
-			} else {
-				content = JSON.stringify(syncData, null, 2);
-				fileName = this.fileName;
-			}
+			// Convert SyncData to FinancialData for encryption
+			const financialData: FinancialData = {
+				transactions: syncData.transactions.map(tx => ({
+					id: tx.Date || '',
+					amount: tx.Amount,
+					description: tx.Description || '',
+					category: tx.Category || 'Other',
+					date: new Date(tx.Date),
+					type: tx['Income/Expense'] === 'Income' ? 'income' : 'expense',
+					account: tx.Account || '',
+					tags: [],
+					recurring: undefined,
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					note: tx.Note || '',
+					currency: tx.Currency || 'MYR',
+					myr: tx.MYR,
+					incomeExpense: tx['Income/Expense'],
+					account2: tx.Account_2
+				})),
+				accounts: syncData.accounts,
+				preferences: syncData.preferences || null
+			};
+			
+			const encryptedData = CryptoUtils.encryptFinancialData(financialData);
+			const fileName = encrypted ? this.encryptedFileName : this.fileName;
 
 			// Check if file already exists
 			const existingFileId = await this.findFile(fileName);
 			
 			// Upload or update the file
+			const content = encrypted ? JSON.stringify(encryptedData) : JSON.stringify(syncData, null, 2);
 			const fileId = await this.uploadFile(fileName, content, existingFileId || undefined);
 			
 			if (fileId) {
@@ -290,18 +301,32 @@ export class GoogleDriveSync {
 			}
 
 			if (encrypted) {
-				// Decrypt the data
 				const encryptedData = JSON.parse(content);
-				const decryptedData = CryptoUtils.decryptFinancialData(encryptedData);
+				const financialData = CryptoUtils.decryptFinancialData(encryptedData);
+				
+				// Convert FinancialData back to SyncData
 				return {
-					transactions: (decryptedData.transactions || []) as ExternalTransactionFormat[],
-					accounts: (decryptedData.accounts || []) as Account[],
-					categories: [] as Category[],
-					preferences: (decryptedData.preferences || null) as UserPreferences | null,
+					transactions: financialData.transactions.map(tx => ({
+						Date: tx.date.toISOString().split('T')[0],
+						Account: tx.account,
+						Category: tx.category,
+						Subcategory: tx.subcategory || null,
+						Note: tx.note || null,
+						MYR: tx.myr || tx.amount,
+						'Income/Expense': tx.type === 'income' ? 'Income' : 'Expense',
+						Description: tx.description || null,
+						Amount: tx.amount,
+						Currency: tx.currency,
+						Account_2: tx.account2 || 0
+					})),
+					accounts: financialData.accounts,
+					categories: [], // Default empty categories
+					preferences: financialData.preferences,
 					lastModified: new Date().toISOString(),
-					version: '1.0.0',
-				};
+					version: '1.0.0'
+				} as SyncData;
 			}
+			
 			return JSON.parse(content) as SyncData;
 		} catch (error) {
 			console.error('Backup download failed:', error);

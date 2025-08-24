@@ -1,263 +1,286 @@
 import CryptoJS from 'crypto-js';
-import type { EncryptedData } from '../../types/finance';
+import type { Transaction, Account, UserPreferences } from '../../types/finance';
 
-// Encryption key management
-class EncryptionManager {
-  private static instance: EncryptionManager;
-  private encryptionKey: string | null = null;
+// Encryption configuration
+const ENCRYPTION_CONFIG = {
+  algorithm: 'AES',
+  keySize: 256 / 32, // 256 bits
+  ivSize: 128 / 32,  // 128 bits
+  iterations: 10000,  // PBKDF2 iterations
+  tagLength: 128 / 32 // 128 bits for authentication tag
+};
 
-  private constructor() {}
+// Types for encrypted data
+export interface EncryptedData {
+  data: string;
+  iv: string;
+  salt: string;
+  tag: string;
+  timestamp: number;
+  version: string;
+}
 
-  static getInstance(): EncryptionManager {
-    if (!EncryptionManager.instance) {
-      EncryptionManager.instance = new EncryptionManager();
-    }
-    return EncryptionManager.instance;
-  }
+export interface FinancialData {
+  transactions: Transaction[];
+  accounts: Account[];
+  preferences: UserPreferences | null;
+}
 
-  // Initialize encryption key from user password or generate one
-  async initializeKey(password?: string): Promise<void> {
-    if (password) {
-      // Derive key from user password using PBKDF2
-      const salt = this.getOrCreateSalt();
-      this.encryptionKey = CryptoJS.PBKDF2(password, salt, {
-        keySize: 256 / 32,
-        iterations: 10000,
-      }).toString();
-    } else {
-      // Generate a random key for local storage
-      this.encryptionKey = this.getOrCreateLocalKey();
-    }
-  }
-
-  private getOrCreateSalt(): string {
-    let salt = localStorage.getItem('finance_app_salt');
-    if (!salt) {
-      salt = CryptoJS.lib.WordArray.random(256 / 8).toString();
-      localStorage.setItem('finance_app_salt', salt);
-    }
-    return salt;
-  }
-
-  private getOrCreateLocalKey(): string {
-    let key = localStorage.getItem('finance_app_key');
-    if (!key) {
-      key = CryptoJS.lib.WordArray.random(256 / 8).toString();
-      localStorage.setItem('finance_app_key', key);
-    }
-    return key;
-  }
-
-  // Encrypt data
-  encrypt<T>(data: T): EncryptedData {
-    if (!this.encryptionKey) {
-      throw new Error('Encryption key not initialized');
-    }
-
-    const jsonString = JSON.stringify(data);
-    const iv = CryptoJS.lib.WordArray.random(128 / 8);
-    
-    const encrypted = CryptoJS.AES.encrypt(jsonString, this.encryptionKey, {
-      iv: iv,
-      mode: CryptoJS.mode.CBC,
-      padding: CryptoJS.pad.Pkcs7,
+// Key derivation and management
+export namespace KeyManager {
+  /**
+   * Derive encryption key from password using PBKDF2
+   */
+  export function deriveKey(password: string, salt: CryptoJS.lib.WordArray): CryptoJS.lib.WordArray {
+    return CryptoJS.PBKDF2(password, salt, {
+      keySize: ENCRYPTION_CONFIG.keySize,
+      iterations: ENCRYPTION_CONFIG.iterations,
+      hasher: CryptoJS.algo.SHA256
     });
-
-    return {
-      data: encrypted.toString(),
-      iv: iv.toString(),
-      timestamp: Date.now(),
-    };
   }
 
-  // Decrypt data
-  decrypt<T>(encryptedData: EncryptedData): T {
-    if (!this.encryptionKey) {
-      throw new Error('Encryption key not initialized');
-    }
-
-    try {
-      const decrypted = CryptoJS.AES.decrypt(encryptedData.data, this.encryptionKey, {
-        iv: CryptoJS.enc.Hex.parse(encryptedData.iv),
-        mode: CryptoJS.mode.CBC,
-        padding: CryptoJS.pad.Pkcs7,
-      });
-
-      const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
-      return JSON.parse(decryptedString);
-    } catch (error) {
-      throw new Error('Failed to decrypt data. Invalid key or corrupted data.');
-    }
+  /**
+   * Generate a random salt
+   */
+  export function generateSalt(): CryptoJS.lib.WordArray {
+    return CryptoJS.lib.WordArray.random(ENCRYPTION_CONFIG.keySize);
   }
 
-  // Check if encryption is initialized
-  isInitialized(): boolean {
-    return this.encryptionKey !== null;
+  /**
+   * Generate a random IV
+   */
+  export function generateIV(): CryptoJS.lib.WordArray {
+    return CryptoJS.lib.WordArray.random(ENCRYPTION_CONFIG.ivSize);
   }
 
-  // Clear encryption key (for logout)
-  clearKey(): void {
-    this.encryptionKey = null;
+  /**
+   * Get or generate master password from secure storage
+   */
+  export function getMasterPassword(): string {
+    // In production, this should be derived from user input or secure key storage
+    // For now, we'll use a combination of device-specific data
+    const deviceId = localStorage.getItem('device_id') || generateDeviceId();
+    const appSecret = 'finance-dashboard-2024'; // This should be environment-specific
+    return CryptoJS.SHA256(deviceId + appSecret).toString();
   }
 
-  // Hash sensitive data for comparison without storing plaintext
-  hash(data: string): string {
-    return CryptoJS.SHA256(data).toString();
-  }
-
-  // Generate secure random ID
-  generateSecureId(): string {
-    return CryptoJS.lib.WordArray.random(128 / 8).toString();
+  /**
+   * Generate a unique device identifier
+   */
+  function generateDeviceId(): string {
+    const deviceId = CryptoJS.lib.WordArray.random(32).toString();
+    localStorage.setItem('device_id', deviceId);
+    return deviceId;
   }
 }
 
-// Export singleton instance
-export const encryptionManager = EncryptionManager.getInstance();
-
-// Utility functions for common encryption tasks
+// Core encryption utilities
 export namespace CryptoUtils {
-  export async function initializeEncryption(password?: string): Promise<void> {
-    await encryptionManager.initializeKey(password);
+  /**
+   * Encrypt financial data with AES-256-CBC + HMAC
+   */
+  export function encryptFinancialData(data: FinancialData): EncryptedData {
+    try {
+      // Serialize the data
+      const jsonData = JSON.stringify(data);
+      
+      // Generate cryptographic components
+      const salt = KeyManager.generateSalt();
+      const iv = KeyManager.generateIV();
+      const password = KeyManager.getMasterPassword();
+      
+      // Derive encryption key and HMAC key
+       const encryptionKey = KeyManager.deriveKey(password, salt);
+       const hmacKey = KeyManager.deriveKey(`${password}hmac`, salt);
+      
+      // Encrypt the data using AES-CBC
+      const encrypted = CryptoJS.AES.encrypt(jsonData, encryptionKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+      });
+      
+      // Create HMAC for authentication
+      const ciphertext = encrypted.ciphertext.toString(CryptoJS.enc.Base64);
+      const hmacData = ciphertext + iv.toString(CryptoJS.enc.Base64) + salt.toString(CryptoJS.enc.Base64);
+      const tag = CryptoJS.HmacSHA256(hmacData, hmacKey).toString(CryptoJS.enc.Base64);
+      
+      return {
+        data: ciphertext,
+        iv: iv.toString(CryptoJS.enc.Base64),
+        salt: salt.toString(CryptoJS.enc.Base64),
+        tag: tag,
+        timestamp: Date.now(),
+        version: '1.0.0'
+      };
+    } catch (error) {
+      console.error('Encryption failed:', error);
+      throw new Error('Failed to encrypt financial data');
+    }
   }
 
-  export function encryptSensitiveData<T>(data: T): EncryptedData {
-    return encryptionManager.encrypt(data);
+  /**
+   * Decrypt financial data
+   */
+  export function decryptFinancialData(encryptedData: EncryptedData): FinancialData {
+    try {
+      // Validate encrypted data structure
+      if (!encryptedData.data || !encryptedData.iv || !encryptedData.salt || !encryptedData.tag) {
+        throw new Error('Invalid encrypted data structure');
+      }
+
+      // Parse cryptographic components
+      const salt = CryptoJS.enc.Base64.parse(encryptedData.salt);
+      const iv = CryptoJS.enc.Base64.parse(encryptedData.iv);
+      const password = KeyManager.getMasterPassword();
+      
+      // Derive decryption key and HMAC key
+       const encryptionKey = KeyManager.deriveKey(password, salt);
+       const hmacKey = KeyManager.deriveKey(`${password}hmac`, salt);
+      
+      // Verify HMAC for authentication
+      const hmacData = encryptedData.data + encryptedData.iv + encryptedData.salt;
+      const expectedTag = CryptoJS.HmacSHA256(hmacData, hmacKey).toString(CryptoJS.enc.Base64);
+      
+      if (expectedTag !== encryptedData.tag) {
+        throw new Error('Authentication failed - data may have been tampered with');
+      }
+      
+      // Decrypt the data using AES-CBC
+      const decrypted = CryptoJS.AES.decrypt(encryptedData.data, encryptionKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+      });
+      
+      // Convert to string and parse JSON
+      const jsonData = decrypted.toString(CryptoJS.enc.Utf8);
+      
+      if (!jsonData) {
+        throw new Error('Decryption failed - invalid password or corrupted data');
+      }
+      
+      return JSON.parse(jsonData) as FinancialData;
+    } catch (error) {
+      console.error('Decryption failed:', error);
+      throw new Error('Failed to decrypt financial data');
+    }
   }
 
-  export function decryptSensitiveData<T>(encryptedData: EncryptedData): T {
-    return encryptionManager.decrypt<T>(encryptedData);
+  /**
+   * Create a secure hash of data for integrity verification
+   */
+  export function createDataHash(data: unknown): string {
+    const jsonData = JSON.stringify(data);
+    return CryptoJS.SHA256(jsonData).toString(CryptoJS.enc.Hex);
   }
 
-  export function hashPassword(password: string): string {
-    return encryptionManager.hash(password);
+  /**
+   * Verify data integrity using hash comparison
+   */
+  export function verifyDataIntegrity(data: unknown, expectedHash: string): boolean {
+    const actualHash = createDataHash(data);
+    return actualHash === expectedHash;
   }
 
-  export function generateSecureToken(): string {
-    return encryptionManager.generateSecureId();
+  /**
+   * Generate a secure random token
+   */
+  export function generateSecureToken(length = 32): string {
+    return CryptoJS.lib.WordArray.random(length).toString(CryptoJS.enc.Hex);
   }
 
-  export function isEncryptionReady(): boolean {
-    return encryptionManager.isInitialized();
-  }
-
-  export function clearEncryption(): void {
-    encryptionManager.clearKey();
-  }
-
-  // Encrypt financial data before storing
-  export function encryptFinancialData(data: {
-    transactions?: unknown[];
-    accounts?: unknown[];
-    preferences?: unknown;
-  }): EncryptedData {
-    // Remove sensitive fields and encrypt the rest
-    const sanitizedData = {
-      transactions: data.transactions,
-      accounts: data.accounts,
-      preferences: data.preferences,
-    };
-
-    return encryptSensitiveData(sanitizedData);
-  }
-
-  // Decrypt financial data after retrieval
-  export function decryptFinancialData(encryptedData: EncryptedData): {
-    transactions?: unknown[];
-    accounts?: unknown[];
-    preferences?: unknown;
-  } {
-    return decryptSensitiveData(encryptedData);
-  }
-
-  // Validate data integrity
-  export function validateDataIntegrity(data: unknown, expectedHash?: string): boolean {
-    if (!expectedHash) return true;
-    
-    const dataHash = encryptionManager.hash(JSON.stringify(data));
-    return dataHash === expectedHash;
-  }
-
-  // Create data checksum for integrity verification
-  export function createDataChecksum(data: unknown): string {
-    return encryptionManager.hash(JSON.stringify(data));
+  /**
+   * Secure data wipe (overwrite sensitive data in memory)
+   */
+  export function secureWipe(sensitiveData: string): void {
+    // Note: JavaScript doesn't provide direct memory management,
+    // but we can at least clear the reference and suggest garbage collection
+    if (typeof sensitiveData === 'string') {
+      // Create a new string to overwrite (limited effectiveness in JS)
+      const wipedData = '\0'.repeat(sensitiveData.length);
+      // Force garbage collection hint
+      if (typeof global !== 'undefined' && global.gc) {
+        global.gc();
+      }
+    }
   }
 }
 
 // Security utilities
 export namespace SecurityUtils {
-  // Check if running in secure context
+  /**
+   * Check if running in secure context (HTTPS or localhost)
+   */
   export function isSecureContext(): boolean {
-    return window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
+    return window.isSecureContext || 
+           location.protocol === 'https:' || 
+           location.hostname === 'localhost' ||
+           location.hostname === '127.0.0.1';
   }
 
-  // Generate secure session token
-  export function generateSessionToken(): string {
-    return CryptoJS.lib.WordArray.random(256 / 8).toString();
-  }
-
-  // Validate password strength
-  export function validatePasswordStrength(password: string): {
-    isValid: boolean;
-    score: number;
-    feedback: string[];
-  } {
-    const feedback: string[] = [];
-    let score = 0;
-
-    if (password.length >= 8) score += 1;
-    else feedback.push('Password should be at least 8 characters long');
-
-    if (/[a-z]/.test(password)) score += 1;
-    else feedback.push('Password should contain lowercase letters');
-
-    if (/[A-Z]/.test(password)) score += 1;
-    else feedback.push('Password should contain uppercase letters');
-
-    if (/\d/.test(password)) score += 1;
-    else feedback.push('Password should contain numbers');
-
-    if (/[^\w\s]/.test(password)) score += 1;
-    else feedback.push('Password should contain special characters');
-
-    return {
-      isValid: score >= 4,
-      score,
-      feedback,
-    };
-  }
-
-  // Secure data wipe
-  export function secureWipe(key: string): void {
-    // Overwrite localStorage entry multiple times before removal
-    const randomData = CryptoJS.lib.WordArray.random(1024).toString();
-    for (let i = 0; i < 3; i++) {
-      localStorage.setItem(key, randomData);
+  /**
+   * Validate encryption strength
+   */
+  export function validateEncryptionStrength(): boolean {
+    // Check if crypto APIs are available
+    if (!window.crypto || !window.crypto.getRandomValues) {
+      console.warn('Crypto APIs not available - encryption may be weak');
+      return false;
     }
-    localStorage.removeItem(key);
-  }
-
-  // Check for potential security threats
-  export function performSecurityCheck(): {
-    isSecure: boolean;
-    warnings: string[];
-  } {
-    const warnings: string[] = [];
-
+    
+    // Check if running in secure context
     if (!isSecureContext()) {
-      warnings.push('Application is not running in a secure context (HTTPS)');
+      console.warn('Not running in secure context - encryption may be compromised');
+      return false;
     }
+    
+    return true;
+  }
 
-    if (!window.crypto || !window.crypto.subtle) {
-      warnings.push('Web Crypto API is not available');
+  /**
+   * Generate cryptographically secure random bytes
+   */
+  export function getSecureRandomBytes(length: number): Uint8Array {
+    if (!window.crypto || !window.crypto.getRandomValues) {
+      throw new Error('Secure random number generation not available');
     }
+    
+    const bytes = new Uint8Array(length);
+    window.crypto.getRandomValues(bytes);
+    return bytes;
+  }
 
-    if (typeof Storage === 'undefined') {
-      warnings.push('Local storage is not available');
+  /**
+   * Check for potential security vulnerabilities
+   */
+  export function performSecurityCheck(): { secure: boolean; warnings: string[] } {
+    const warnings: string[] = [];
+    
+    if (!isSecureContext()) {
+      warnings.push('Application not running in secure context (HTTPS)');
     }
-
+    
+    if (!window.crypto || !window.crypto.getRandomValues) {
+      warnings.push('Crypto APIs not available');
+    }
+    
+    const deviceId = localStorage.getItem('device_id');
+    if (deviceId && deviceId.length < 32) {
+      warnings.push('Weak device identifier detected');
+    }
+    
     return {
-      isSecure: warnings.length === 0,
-      warnings,
+      secure: warnings.length === 0,
+      warnings
     };
   }
 }
+
+// Export main encryption interface
+export default {
+  CryptoUtils,
+  KeyManager,
+  SecurityUtils,
+  ENCRYPTION_CONFIG
+};
