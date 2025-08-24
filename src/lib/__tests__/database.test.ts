@@ -117,7 +117,8 @@ describe('DatabaseService', () => {
       category: 'groceries',
       description: 'Weekly groceries',
       date: new Date('2024-01-01'),
-      account: 'checking'
+      account: 'checking',
+      currency: 'MYR'
     };
 
     it('should create a transaction', async () => {

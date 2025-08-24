@@ -7,6 +7,7 @@ import type {
 } from "../../types/finance";
 import { ValidationUtils } from "../calculations/finance";
 import { DatabaseService } from "../database/db";
+import { DataTransformUtils } from "./dataTransform";
 
 export interface TransactionFilters {
 	startDate?: Date;
@@ -142,17 +143,9 @@ export class TransactionManager {
 	}
 
 	async getTransactions(filters?: TransactionFilters): Promise<Transaction[]> {
-		const dbFilters = filters
-			? {
-					startDate: filters.startDate,
-					endDate: filters.endDate,
-					category: filters.category,
-					account: filters.account,
-					type: filters.type,
-				}
-			: undefined;
 
-		let transactions = await DatabaseService.getTransactions(dbFilters);
+
+		let transactions = await DatabaseService.getTransactions();
 
 		// Apply additional filters
 		if (filters) {
@@ -206,9 +199,7 @@ export class TransactionManager {
 		return result;
 	}
 
-	async deleteBulkTransactions(
-		ids: string[],
-	): Promise<{
+	async deleteBulkTransactions(ids: string[]): Promise<{
 		successful: string[];
 		failed: Array<{ id: string; error: string }>;
 	}> {
@@ -342,7 +333,7 @@ export class TransactionManager {
 	// Categorization
 	async suggestCategory(
 		description: string,
-		amount: number,
+		_amount: number,
 	): Promise<string | null> {
 		// Simple keyword-based categorization
 		const keywords = {
@@ -423,16 +414,17 @@ export class TransactionManager {
 			) {
 				try {
 					const transactionData: Omit<
-						Transaction,
-						"id" | "createdAt" | "updatedAt"
-					> = {
-						amount: transaction.amount,
-						description: transaction.description,
-						category: transaction.category,
-						account: transaction.account,
-						type: transaction.type,
-						date: today,
-					};
+					Transaction,
+					"id" | "createdAt" | "updatedAt"
+				> = {
+					amount: transaction.amount,
+					description: transaction.description,
+					category: transaction.category,
+					account: transaction.account,
+					type: transaction.type,
+					date: today,
+					currency: transaction.currency || 'MYR'
+				};
 
 					const newTransaction = await this.createTransaction(transactionData);
 					processedTransactions.push(newTransaction);
@@ -602,34 +594,12 @@ export class TransactionManager {
 		return JSON.stringify(transactions, null, 2);
 	}
 
-	private convertToCSV(transactions: Transaction[]): string {
-		if (transactions.length === 0) return "";
 
-		const headers = [
-			"Date",
-			"Description",
-			"Amount",
-			"Type",
-			"Category",
-			"Account",
-		];
-		const rows = transactions.map((t) => [
-			new Date(t.date).toISOString().split("T")[0],
-			t.description,
-			t.amount.toString(),
-			t.type,
-			t.category,
-			t.account,
-		]);
 
-		return [headers, ...rows]
-			.map((row) => row.map((cell) => `"${cell}"`).join(","))
-			.join("\n");
-	}
-
+	// Updated import function to handle external format
 	async importTransactions(
 		data: string,
-		format: "json" | "csv" = "json",
+		format: "json" | "csv" | "external-json" = "json",
 	): Promise<BulkTransactionResult> {
 		let transactions: Array<
 			Omit<Transaction, "id" | "createdAt" | "updatedAt">
@@ -637,13 +607,65 @@ export class TransactionManager {
 
 		if (format === "csv") {
 			transactions = this.parseCSV(data);
+		} else if (format === "external-json") {
+			// Handle the external JSON format
+			const externalData = DataTransformUtils.processImportData(data);
+			transactions = DataTransformUtils.fromExternalFormatArray(externalData);
 		} else {
+			// Standard internal JSON format
 			transactions = JSON.parse(data);
 		}
 
 		return this.createBulkTransactions(transactions);
 	}
 
+	// New method to export in external format
+	async exportTransactionsExternal(
+		filters?: TransactionFilters
+	): Promise<string> {
+		const transactions = await this.getTransactions(filters);
+		const externalFormat = DataTransformUtils.toExternalFormatArray(transactions);
+		return JSON.stringify(externalFormat, null, 2);
+	}
+
+	// Updated CSV export to include all new fields
+	private convertToCSV(transactions: Transaction[]): string {
+		if (transactions.length === 0) return "";
+
+		const headers = [
+			"Date",
+			"Account", 
+			"Category",
+			"Subcategory",
+			"Note",
+			"MYR",
+			"Income/Expense",
+			"Description",
+			"Amount",
+			"Currency",
+			"Account_2"
+		];
+		
+		const rows = transactions.map((t) => [
+			new Date(t.date).toISOString(),
+			t.account,
+			t.category,
+			t.subcategory || '',
+			t.note || '',
+			t.myr || t.amount,
+			t.incomeExpense || (t.type === 'income' ? 'Income' : 'Expense'),
+			t.description,
+			t.amount.toString(),
+			t.currency || 'MYR',
+			t.account2 || t.amount
+		]);
+
+		return [headers, ...rows]
+			.map((row) => row.map((cell) => `"${cell}"`).join(","))
+			.join("\n");
+	}
+
+	// Updated CSV parsing to handle new fields
 	private parseCSV(
 		csvData: string,
 	): Array<Omit<Transaction, "id" | "createdAt" | "updatedAt">> {
@@ -653,6 +675,25 @@ export class TransactionManager {
 		return lines.slice(1).map((line) => {
 			const values = line.split(",").map((v) => v.replace(/"/g, ""));
 
+			// Handle both old and new CSV formats
+			if (headers.includes('MYR')) {
+				// New format with all fields
+				return {
+					date: new Date(values[0]),
+					account: values[1],
+					category: values[2],
+					subcategory: values[3] || undefined,
+					note: values[4] || undefined,
+					myr: Number.parseFloat(values[5]),
+					incomeExpense: values[6] as 'Income' | 'Expense',
+					description: values[7],
+					amount: Number.parseFloat(values[8]),
+					currency: values[9],
+					account2: Number.parseFloat(values[10]),
+					type: values[6].toLowerCase() as Transaction["type"]
+				};
+			}
+			// Legacy format
 			return {
 				date: new Date(values[0]),
 				description: values[1],
@@ -660,6 +701,10 @@ export class TransactionManager {
 				type: values[3] as Transaction["type"],
 				category: values[4],
 				account: values[5],
+				currency: 'MYR',
+				myr: Number.parseFloat(values[2]),
+				incomeExpense: values[3] === 'income' ? 'Income' : 'Expense',
+				account2: Number.parseFloat(values[2])
 			};
 		});
 	}

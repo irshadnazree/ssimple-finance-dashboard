@@ -12,6 +12,7 @@ describe('FinanceCalculations', () => {
       description: 'Monthly salary',
       date: new Date('2024-01-01'),
       account: 'checking',
+      currency: 'MYR',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -23,6 +24,7 @@ describe('FinanceCalculations', () => {
       description: 'Weekly groceries',
       date: new Date('2024-01-02'),
       account: 'checking',
+      currency: 'MYR',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -34,6 +36,7 @@ describe('FinanceCalculations', () => {
       description: 'Electric bill',
       date: new Date('2024-01-10'),
       account: 'checking',
+      currency: 'MYR',
       createdAt: new Date(),
       updatedAt: new Date()
     }
@@ -88,6 +91,7 @@ describe('FinanceCalculations', () => {
           description: 'Small income',
           date: new Date('2024-01-01'),
           account: 'checking',
+          currency: 'MYR',
           createdAt: new Date(),
           updatedAt: new Date()
         },
@@ -99,6 +103,7 @@ describe('FinanceCalculations', () => {
           description: 'Monthly rent',
           date: new Date('2024-01-02'),
           account: 'checking',
+          currency: 'MYR',
           createdAt: new Date(),
           updatedAt: new Date()
         }

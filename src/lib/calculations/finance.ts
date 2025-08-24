@@ -491,6 +491,7 @@ export namespace RecurringTransactions {
         type: baseTransaction.type,
         date: new Date(currentDate),
         tags: baseTransaction.tags,
+        currency: baseTransaction.currency,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
