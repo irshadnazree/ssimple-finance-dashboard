@@ -1,26 +1,88 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { useState } from 'react';
+import { SettingsNavigation } from '../components/settings/SettingsNavigation';
+import { ProfileSettings } from '../components/settings/ProfileSettings';
+import { SecuritySettings } from '../components/settings/SecuritySettings';
+import { NotificationSettings } from '../components/settings/NotificationSettings';
 import GoogleDriveSettings from '../components/settings/GoogleDriveSettings';
+import { SettingsLayout, SettingsSection, SettingsGrid, SettingsContent } from '../components/layout';
 
 export const Route = createFileRoute('/settings')({
 	component: Settings,
 });
 
 function Settings() {
-	return (
-		<div className="min-h-screen bg-background">
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-				<div className="mb-8">
-					<h1 className="text-2xl font-bold tracking-tight font-mono uppercase">
-						Settings
-					</h1>
-					<p className="text-muted-foreground font-mono text-sm uppercase tracking-wider">
-						Manage your Google Drive synchronization and data preferences
-					</p>
-					<div className="h-px bg-gradient-to-r from-primary via-primary/50 to-transparent mt-4" />
-				</div>
+	const [activeSection, setActiveSection] = useState('profile');
 
-				<GoogleDriveSettings />
-			</div>
-		</div>
+	const renderSettingsContent = () => {
+		switch (activeSection) {
+			case 'profile':
+				return <ProfileSettings />;
+			case 'security':
+				return <SecuritySettings />;
+			case 'notifications':
+				return <NotificationSettings />;
+			case 'data':
+				return <GoogleDriveSettings />;
+			case 'appearance':
+				return (
+					<div className="space-y-6">
+						<div>
+							<h2 className="text-xl font-mono font-bold tracking-wider uppercase mb-2">
+								Appearance Settings
+							</h2>
+							<p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
+								Customize the look and feel of your dashboard
+							</p>
+						</div>
+						<div className="p-8 text-center text-muted-foreground">
+							<p>Appearance settings coming soon...</p>
+						</div>
+					</div>
+				);
+			case 'export':
+				return (
+					<div className="space-y-6">
+						<div>
+							<h2 className="text-xl font-mono font-bold tracking-wider uppercase mb-2">
+								Export & Import
+							</h2>
+							<p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
+								Manage your data export and import options
+							</p>
+						</div>
+						<div className="p-8 text-center text-muted-foreground">
+							<p>Export & Import functionality coming soon...</p>
+						</div>
+					</div>
+				);
+			default:
+				return <ProfileSettings />;
+		}
+	};
+
+	return (
+		<SettingsLayout>
+			<SettingsSection>
+				<h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+				<p className="text-muted-foreground mt-2">
+					Manage your application preferences and configurations.
+				</p>
+			</SettingsSection>
+			
+			<SettingsGrid
+				navigation={
+					<SettingsNavigation 
+						activeSection={activeSection}
+						onSectionChange={setActiveSection}
+					/>
+				}
+				content={
+					<SettingsContent>
+						{renderSettingsContent()}
+					</SettingsContent>
+				}
+			/>
+		</SettingsLayout>
 	);
 }

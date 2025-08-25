@@ -11,6 +11,10 @@ import { TransactionSummary } from '../components/transactions/TransactionSummar
 import { TransactionHistoryTable } from '../components/transactions/TransactionHistoryTable';
 import { TransactionForm } from '../components/transactions/TransactionForm';
 import { ExportImportDialog } from '../components/transactions/ExportImportDialog';
+import { TransactionOperationsToolbar } from '../components/transactions/TransactionOperationsToolbar';
+import { TransactionFilters as TransactionFiltersComponent } from '../components/transactions/TransactionFilters';
+import { TransactionStatistics } from '../components/transactions/TransactionStatistics';
+import { TransactionsLayout, TransactionsSection, TransactionsToolbar, TransactionsContentGrid } from '../components/layout';
 import { transactionManager, type TransactionFilters, type TransactionSummary as TransactionSummaryType } from '../lib/transactions/transactionManager';
 import { DatabaseService } from '../lib/database/db';
 import { DatabaseInitService } from '../lib/database/init';
@@ -39,13 +43,7 @@ function Transactions() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  
-  // Advanced filter states
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [minAmount, setMinAmount] = useState('');
-  const [maxAmount, setMaxAmount] = useState('');
+  const [selectedTransactions, setSelectedTransactions] = useState<Transaction[]>([]);
 
   // Load initial data
   useEffect(() => {
@@ -125,55 +123,78 @@ function Transactions() {
     return () => clearInterval(interval);
   }, []);
 
-  const applyFiltersAndSearch = useCallback(async () => {
-    try {
-      // Build comprehensive filters
-       const advancedFilters: TransactionFilters = {
-         ...filters,
-         startDate: startDate ? new Date(startDate) : undefined,
-         endDate: endDate ? new Date(endDate) : undefined,
-         minAmount: minAmount ? Number.parseFloat(minAmount) : undefined,
-         maxAmount: maxAmount ? Number.parseFloat(maxAmount) : undefined,
-         description: searchTerm || undefined
-       };
-       
-       const filtered = await transactionManager.getTransactions(advancedFilters);
-      
-      // Apply sorting
-       filtered.sort((a, b) => {
-         let aValue: string | number;
-         let bValue: string | number;
-         
-         switch (sortBy) {
-           case 'date':
-             aValue = new Date(a.date).getTime();
-             bValue = new Date(b.date).getTime();
-             break;
-           case 'amount':
-             aValue = a.amount;
-             bValue = b.amount;
-             break;
-           case 'description':
-             aValue = a.description.toLowerCase();
-             bValue = b.description.toLowerCase();
-             break;
-           default:
-             aValue = new Date(a.date).getTime();
-             bValue = new Date(b.date).getTime();
-         }
-         
-         if (sortOrder === 'asc') {
-           return aValue > bValue ? 1 : -1;
-         }
-         return aValue < bValue ? 1 : -1;
-       });
-      
-      setFilteredTransactions(filtered);
-      setCurrentPage(1); // Reset to first page when filters change
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to filter transactions');
+  const applyFiltersAndSearch = useCallback(() => {
+    let filtered = [...transactions];
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(transaction =>
+        transaction.description.toLowerCase().includes(term) ||
+        transaction.category?.toLowerCase().includes(term) ||
+        transaction.account?.toLowerCase().includes(term)
+      );
     }
-  }, [filters, searchTerm, sortBy, sortOrder, startDate, endDate, minAmount, maxAmount]);
+
+    // Apply filters
+     if (filters.category) {
+       filtered = filtered.filter(t => t.category === filters.category);
+     }
+     if (filters.account) {
+       filtered = filtered.filter(t => t.account === filters.account);
+     }
+     if (filters.type) {
+       filtered = filtered.filter(t => t.type === filters.type);
+     }
+     if (filters.startDate) {
+        const startDate = filters.startDate;
+        filtered = filtered.filter(t => new Date(t.date) >= startDate);
+      }
+      if (filters.endDate) {
+        const endDate = filters.endDate;
+        filtered = filtered.filter(t => new Date(t.date) <= endDate);
+      }
+      if (filters.minAmount !== undefined) {
+        const minAmount = filters.minAmount;
+        filtered = filtered.filter(t => t.amount >= minAmount);
+      }
+      if (filters.maxAmount !== undefined) {
+        const maxAmount = filters.maxAmount;
+        filtered = filtered.filter(t => t.amount <= maxAmount);
+      }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+      
+      switch (sortBy) {
+        case 'date':
+          aValue = new Date(a.date).getTime();
+          bValue = new Date(b.date).getTime();
+          break;
+        case 'amount':
+          aValue = a.amount;
+          bValue = b.amount;
+          break;
+        case 'description':
+          aValue = a.description.toLowerCase();
+          bValue = b.description.toLowerCase();
+          break;
+        default:
+          aValue = new Date(a.date).getTime();
+          bValue = new Date(b.date).getTime();
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      }
+      return aValue < bValue ? 1 : -1;
+    });
+
+    setFilteredTransactions(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [transactions, searchTerm, filters, sortBy, sortOrder]);
 
   // Apply filters and search
   useEffect(() => {
@@ -258,6 +279,95 @@ function Transactions() {
     setEditingTransaction(null);
   };
 
+  // Bulk operations handlers
+  const handleBulkDelete = async (ids: string[]) => {
+    try {
+      await Promise.all(ids.map(id => transactionManager.deleteTransaction(id)));
+      await loadData();
+      setSelectedTransactions([]);
+      toast({
+        variant: 'success',
+        title: 'Bulk Delete Successful',
+        description: `${ids.length} transactions deleted.`,
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete transactions';
+      setError(errorMsg);
+      toast({
+        variant: 'destructive',
+        title: 'Bulk Delete Failed',
+        description: errorMsg,
+      });
+    }
+  };
+
+  const handleBulkStatusUpdate = async (ids: string[], status: Transaction['status']) => {
+    try {
+      await Promise.all(ids.map(id => transactionManager.updateTransactionStatus(id, status)));
+      await loadData();
+      setSelectedTransactions([]);
+      toast({
+        variant: 'success',
+        title: 'Bulk Status Update Successful',
+        description: `${ids.length} transactions updated to ${status}.`,
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update transaction status';
+      setError(errorMsg);
+      toast({
+        variant: 'destructive',
+        title: 'Bulk Update Failed',
+        description: errorMsg,
+      });
+    }
+  };
+
+  const handleBulkCategoryUpdate = async (ids: string[], categoryId: string) => {
+    try {
+      await Promise.all(ids.map(id => transactionManager.updateTransaction(id, { category: categoryId })));
+      await loadData();
+      setSelectedTransactions([]);
+      toast({
+        variant: 'success',
+        title: 'Bulk Category Update Successful',
+        description: `${ids.length} transactions updated.`,
+      });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update transaction categories';
+      setError(errorMsg);
+      toast({
+        variant: 'destructive',
+        title: 'Bulk Update Failed',
+        description: errorMsg,
+      });
+    }
+  };
+
+  const handleExportSelected = (transactions: Transaction[]) => {
+    const csvContent = [
+      'Date,Description,Amount,Type,Category,Account,Status',
+      ...transactions.map(t => 
+        `${t.date},"${t.description}",${t.amount},${t.type},${t.category || ''},${t.account || ''},${t.status}`
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `selected-transactions-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      variant: 'success',
+      title: 'Export Successful',
+      description: `${transactions.length} transactions exported.`,
+    });
+  };
+
   // Pagination
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -279,35 +389,34 @@ function Transactions() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight font-mono uppercase">Transactions</h1>
-              <p className="text-muted-foreground font-mono text-xs sm:text-sm uppercase tracking-wider">Manage your income and expenses</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button 
-                onClick={() => setShowForm(true)}
-                className="w-full sm:w-auto font-mono text-sm sm:text-base"
-                disabled={loading}
-              >
-                💰 Add Transaction
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setShowExportImport(true)}
-                className="w-full sm:w-auto font-mono text-sm sm:text-base"
-                disabled={loading}
-              >
-                📊 Export/Import
-              </Button>
-            </div>
+    <TransactionsLayout>
+      <TransactionsSection>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight font-mono uppercase">Transactions</h1>
+            <p className="text-muted-foreground font-mono text-xs sm:text-sm uppercase tracking-wider">Manage your income and expenses</p>
           </div>
+          <TransactionsToolbar>
+            <Button 
+              onClick={() => setShowForm(true)}
+              className="w-full sm:w-auto font-mono text-sm sm:text-base"
+              disabled={loading}
+            >
+              💰 Add Transaction
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => setShowExportImport(true)}
+              className="w-full sm:w-auto font-mono text-sm sm:text-base"
+              disabled={loading}
+            >
+              📊 Export/Import
+            </Button>
+          </TransactionsToolbar>
         </div>
+      </TransactionsSection>
 
+      <TransactionsSection>
         {/* Error Alert */}
         {error && (
           <Alert className="mb-6">
@@ -318,167 +427,43 @@ function Transactions() {
         {/* Transaction Summary */}
         {summary && <TransactionSummary summary={summary} loading={loading} />}
          {!summary && loading && <TransactionSummary summary={{ totalIncome: 0, totalExpenses: 0, netAmount: 0, transactionCount: 0, averageTransaction: 0, categoryBreakdown: {}, accountBreakdown: {} }} loading={true} />}
+      </TransactionsSection>
 
-        {/* Filters and Search */}
-        <Card className="mb-4 sm:mb-6">
-          <CardHeader className="pb-3 sm:pb-6">
-            <div className="flex items-center justify-between">
-              <CardTitle className="font-mono uppercase tracking-wider text-sm sm:text-base">Filters & Search</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="text-xs sm:text-sm font-mono"
-              >
-                {showAdvancedFilters ? '🔼 Hide Advanced' : '🔽 Show Advanced'}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Search - Full width on mobile */}
-            <div className="w-full">
-              <Label htmlFor="search" className="font-mono text-xs uppercase tracking-wider">Search</Label>
-              <Input
-                id="search"
-                placeholder="Search by description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="mt-1 text-base sm:text-sm"
-              />
-            </div>
-            
-            {/* Basic Filter dropdowns - responsive grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="category" className="font-mono text-xs uppercase tracking-wider">Category</Label>
-                <Select
-                  id="category"
-                  value={filters.category || ''}
-                  onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value || undefined }))}
-                  className="mt-1 text-base sm:text-sm"
-                >
-                  <option value="">All Categories</option>
-                  {categories.map(category => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  ))}
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="account" className="font-mono text-xs uppercase tracking-wider">Account</Label>
-                <Select
-                  id="account"
-                  value={filters.account || ''}
-                  onChange={(e) => setFilters(prev => ({ ...prev, account: e.target.value || undefined }))}
-                  className="mt-1 text-base sm:text-sm"
-                >
-                  <option value="">All Accounts</option>
-                  {accounts.map(account => (
-                    <option key={account.id} value={account.id}>{account.name}</option>
-                  ))}
-                </Select>
-              </div>
-              
-              <div className="sm:col-span-2 lg:col-span-1">
-                <Label htmlFor="type" className="font-mono text-xs uppercase tracking-wider">Type</Label>
-                <Select
-                  id="type"
-                  value={filters.type || ''}
-                  onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value as Transaction['type'] || undefined }))}
-                  className="mt-1 text-base sm:text-sm"
-                >
-                  <option value="">All Types</option>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                  <option value="transfer">Transfer</option>
-                </Select>
-              </div>
-            </div>
-            
-            {/* Advanced Filters */}
-            {showAdvancedFilters && (
-              <div className="border-t pt-4 space-y-4">
-                <h4 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">Advanced Filters</h4>
-                
-                {/* Date Range */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startDate" className="font-mono text-xs uppercase tracking-wider">Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="mt-1 text-base sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="endDate" className="font-mono text-xs uppercase tracking-wider">End Date</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="mt-1 text-base sm:text-sm"
-                    />
-                  </div>
-                </div>
-                
-                {/* Amount Range */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="minAmount" className="font-mono text-xs uppercase tracking-wider">Min Amount ($)</Label>
-                    <Input
-                      id="minAmount"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={minAmount}
-                      onChange={(e) => setMinAmount(e.target.value)}
-                      className="mt-1 text-base sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="maxAmount" className="font-mono text-xs uppercase tracking-wider">Max Amount ($)</Label>
-                    <Input
-                      id="maxAmount"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={maxAmount}
-                      onChange={(e) => setMaxAmount(e.target.value)}
-                      className="mt-1 text-base sm:text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex flex-wrap gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilters({});
-                  setSearchTerm('');
-                  setStartDate('');
-                  setEndDate('');
-                  setMinAmount('');
-                  setMaxAmount('');
-                }}
-                className="text-sm"
-              >
-                Clear All Filters
-              </Button>
-              {(startDate || endDate || minAmount || maxAmount || searchTerm || filters.category || filters.account || filters.type) && (
-                <Badge variant="secondary" className="text-xs font-mono">
-                  {[startDate && 'Date Range', minAmount && 'Min Amount', maxAmount && 'Max Amount', searchTerm && 'Search', filters.category && 'Category', filters.account && 'Account', filters.type && 'Type'].filter(Boolean).length} active filter{[startDate && 'Date Range', minAmount && 'Min Amount', maxAmount && 'Max Amount', searchTerm && 'Search', filters.category && 'Category', filters.account && 'Account', filters.type && 'Type'].filter(Boolean).length !== 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <TransactionsSection>
+        {/* Transaction Operations Toolbar */}
+        <TransactionOperationsToolbar
+          selectedTransactions={selectedTransactions}
+          onBulkDelete={handleBulkDelete}
+          onBulkStatusUpdate={handleBulkStatusUpdate}
+          onBulkCategoryUpdate={handleBulkCategoryUpdate}
+          onExportSelected={handleExportSelected}
+          onAddTransaction={() => setShowForm(true)}
+          onExportImport={() => setShowExportImport(true)}
+          categories={categories}
+          loading={loading}
+        />
+      </TransactionsSection>
 
+      <TransactionsContentGrid>
+        {/* Transaction Statistics */}
+        <TransactionStatistics
+          transactions={filteredTransactions}
+          loading={loading}
+        />
+
+        {/* Transaction Filters */}
+         <TransactionFiltersComponent
+           filters={filters}
+           onFiltersChange={setFilters}
+           searchTerm={searchTerm}
+           onSearchChange={setSearchTerm}
+           accounts={accounts}
+           categories={categories}
+           loading={loading}
+         />
+      </TransactionsContentGrid>
+
+      <TransactionsSection>
         {/* Transaction History Table */}
         <TransactionHistoryTable
            transactions={filteredTransactions}
@@ -501,6 +486,7 @@ function Transactions() {
            itemsPerPage={itemsPerPage}
            onPageChange={setCurrentPage}
          />
+      </TransactionsSection>
 
         {/* Transaction Form Modal */}
         {showForm && (
@@ -518,14 +504,13 @@ function Transactions() {
           </div>
         )}
 
-        {/* Export/Import Dialog */}
-        <ExportImportDialog
-          isOpen={showExportImport}
-          onClose={() => setShowExportImport(false)}
-          onImportComplete={loadData}
-          currentFilters={filters}
-        />
-      </div>
-    </div>
+      {/* Export/Import Dialog */}
+      <ExportImportDialog
+        isOpen={showExportImport}
+        onClose={() => setShowExportImport(false)}
+        onImportComplete={loadData}
+        currentFilters={filters}
+      />
+    </TransactionsLayout>
   );
 }
