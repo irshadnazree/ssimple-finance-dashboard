@@ -135,6 +135,240 @@ export interface ChartDataPoint {
 	label?: string;
 }
 
+// Report Types and Data Models
+export type ReportType = 
+	| "financial-summary"
+	| "transaction-analysis"
+	| "category-breakdown"
+	| "account-performance"
+	| "cash-flow"
+	| "budget-variance"
+	| "trend-analysis"
+	| "tax-summary";
+
+export type TransactionType = Transaction["type"];
+
+export type ReportPeriod = "7d" | "30d" | "90d" | "6m" | "1y" | "ytd" | "custom";
+
+export type ExportFormat = "pdf" | "csv" | "excel" | "json";
+
+export interface DateRange {
+	startDate: Date;
+	endDate: Date;
+	label?: string;
+}
+
+export interface ReportFilters {
+	dateRange: DateRange;
+	accounts?: string[];
+	categories?: string[];
+	transactionTypes?: Transaction["type"][];
+	amountRange?: {
+		min?: number;
+		max?: number;
+	};
+	tags?: string[];
+	status?: Transaction["status"][];
+}
+
+export interface ReportMetadata {
+	id: string;
+	name: string;
+	type: ReportType;
+	description: string;
+	generatedAt: Date;
+	generatedBy?: string;
+	filters: ReportFilters;
+	parameters?: Record<string, string | number | boolean>;
+}
+
+export interface FinancialSummaryReport {
+	metadata: ReportMetadata;
+	summary: {
+		totalIncome: number;
+		totalExpenses: number;
+		netIncome: number;
+		cashFlow: number;
+		totalBalance: number;
+		averageDailySpending: number;
+		largestExpense: Transaction;
+		largestIncome: Transaction;
+	};
+	periodComparison?: {
+		previousPeriod: {
+			income: number;
+			expenses: number;
+			netIncome: number;
+		};
+		changePercentage: {
+			income: number;
+			expenses: number;
+			netIncome: number;
+		};
+	};
+}
+
+export interface TransactionAnalysisReport {
+	metadata: ReportMetadata;
+	transactionStats: {
+		totalTransactions: number;
+		averageTransactionAmount: number;
+		medianTransactionAmount: number;
+		transactionFrequency: {
+			daily: number;
+			weekly: number;
+			monthly: number;
+		};
+	};
+	topTransactions: {
+		largestExpenses: Transaction[];
+		largestIncomes: Transaction[];
+		mostFrequentCategories: Array<{
+			category: string;
+			count: number;
+			totalAmount: number;
+		}>;
+	};
+	trendData: Array<{
+		date: string;
+		income: number;
+		expenses: number;
+		net: number;
+		transactionCount: number;
+	}>;
+}
+
+export interface CategoryBreakdownReport {
+	metadata: ReportMetadata;
+	incomeCategories: Array<{
+		category: string;
+		amount: number;
+		percentage: number;
+		transactionCount: number;
+		averageAmount: number;
+		subcategories?: Array<{
+			name: string;
+			amount: number;
+			percentage: number;
+		}>;
+	}>;
+	expenseCategories: Array<{
+		category: string;
+		amount: number;
+		percentage: number;
+		transactionCount: number;
+		averageAmount: number;
+		subcategories?: Array<{
+			name: string;
+			amount: number;
+			percentage: number;
+		}>;
+	}>;
+	chartData: Array<{
+		category: string;
+		value: number;
+		color: string;
+	}>;
+}
+
+export interface AccountPerformanceReport {
+	metadata: ReportMetadata;
+	accounts: Array<{
+		id: string;
+		name: string;
+		type: Account["type"];
+		startingBalance: number;
+		endingBalance: number;
+		netChange: number;
+		changePercentage: number;
+		totalInflows: number;
+		totalOutflows: number;
+		transactionCount: number;
+		averageTransactionAmount: number;
+		performanceScore: number;
+	}>;
+	overallPerformance: {
+		totalNetWorth: number;
+		netWorthChange: number;
+		bestPerformingAccount: string;
+		worstPerformingAccount: string;
+	};
+}
+
+export interface CashFlowReport {
+	metadata: ReportMetadata;
+	cashFlowData: Array<{
+		date: string;
+		inflows: number;
+		outflows: number;
+		netFlow: number;
+		cumulativeFlow: number;
+		runningBalance: number;
+	}>;
+	projections?: Array<{
+		date: string;
+		projectedInflow: number;
+		projectedOutflow: number;
+		projectedBalance: number;
+		confidenceLevel: number;
+	}>;
+	summary: {
+		averageMonthlyInflow: number;
+		averageMonthlyOutflow: number;
+		cashFlowVolatility: number;
+		longestPositiveStreak: number;
+		longestNegativeStreak: number;
+	};
+}
+
+export interface PerformanceMetrics {
+	savingsRate: number;
+	expenseRatio: number;
+	incomeGrowthRate: number;
+	expenseGrowthRate: number;
+	financialHealthScore: number;
+	budgetAdherence?: number;
+	debtToIncomeRatio?: number;
+	emergencyFundRatio?: number;
+	investmentAllocation?: number;
+}
+
+export interface ReportSchedule {
+	id: string;
+	name: string;
+	reportType: ReportType;
+	filters: ReportFilters;
+	frequency: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+	nextRun: Date;
+	lastRun?: Date;
+	isActive: boolean;
+	deliveryMethod: "email" | "download" | "both";
+	recipients?: string[];
+	format: ExportFormat;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface UserPermissions {
+	canViewReports: boolean;
+	canExportReports: boolean;
+	canScheduleReports: boolean;
+	canViewSensitiveData: boolean;
+	allowedReportTypes: ReportType[];
+	allowedAccounts: string[];
+	maxExportFrequency?: number; // per day
+}
+
+export interface ReportCache {
+	id: string;
+	reportType: ReportType;
+	filtersHash: string;
+	data: FinancialSummaryReport | TransactionAnalysisReport | CategoryBreakdownReport | AccountPerformanceReport | CashFlowReport;
+	generatedAt: Date;
+	expiresAt: Date;
+	hitCount: number;
+}
+
 export interface ValidationError {
 	field: string;
 	message: string;
