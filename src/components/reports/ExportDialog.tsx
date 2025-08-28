@@ -1,19 +1,19 @@
 import { format } from "date-fns";
 import { Download, File, FileSpreadsheet, FileText } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
-	type ExportOptions,
-	exportService,
+    type ExportOptions,
+    exportService,
 } from "../../lib/reports/exportService";
 import type {
-	AccountPerformanceReport,
-	CashFlowReport,
-	CategoryBreakdownReport,
-	ExportFormat,
-	FinancialSummaryReport,
-	ReportType,
-	Transaction,
-	TransactionAnalysisReport,
+    AccountPerformanceReport,
+    CashFlowReport,
+    CategoryBreakdownReport,
+    ExportFormat,
+    FinancialSummaryReport,
+    ReportType,
+    Transaction,
+    TransactionAnalysisReport,
 } from "../../types/finance";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -67,6 +67,7 @@ export function ExportDialog({
 }: ExportDialogProps) {
 	const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("pdf");
 	const [customFilename, setCustomFilename] = useState("");
+	const filenameInputId = useId();
 	const [includeCharts, setIncludeCharts] = useState(true);
 	const [isExporting, setIsExporting] = useState(false);
 
@@ -184,11 +185,11 @@ export function ExportDialog({
 
 					{/* Custom Filename */}
 					<div className="space-y-2">
-						<label htmlFor="filename-input" className="text-sm font-medium">
+						<label htmlFor={filenameInputId} className="text-sm font-medium">
 							Filename (optional)
 						</label>
 						<input
-							id="filename-input"
+							id={filenameInputId}
 							type="text"
 							value={customFilename}
 							onChange={(e) => setCustomFilename(e.target.value)}

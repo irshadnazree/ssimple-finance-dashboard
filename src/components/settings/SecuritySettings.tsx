@@ -1,15 +1,15 @@
 import {
-	AlertTriangle,
-	Eye,
-	EyeOff,
-	Fingerprint,
-	Key,
-	Lock,
-	Settings,
-	Shield,
-	Smartphone,
+    AlertTriangle,
+    Eye,
+    EyeOff,
+    Fingerprint,
+    Key,
+    Lock,
+    Settings,
+    Shield,
+    Smartphone,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { biometricAuthService } from "../../lib/auth/biometricAuthService";
 import { useToast } from "../../lib/hooks/useToast";
 import { useAuthStore } from "../../stores/authStore";
@@ -60,6 +60,11 @@ export function SecuritySettings() {
 	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 	const [showNewPassword, setShowNewPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+	const currentPasswordId = useId();
+	const newPasswordId = useId();
+	const confirmPasswordId = useId();
+	const sessionTimeoutId = useId();
 	const [passwords, setPasswords] = useState({
 		current: "",
 		new: "",
@@ -235,10 +240,10 @@ export function SecuritySettings() {
 				<CardContent>
 					<form onSubmit={handlePasswordChange} className="space-y-4">
 						<div className="space-y-2">
-							<Label htmlFor="current-password">Current Password</Label>
+							<Label htmlFor={currentPasswordId}>Current Password</Label>
 							<div className="relative">
 								<Input
-									id="current-password"
+									id={currentPasswordId}
 									type={showCurrentPassword ? "text" : "password"}
 									value={passwords.current}
 									onChange={(e) =>
@@ -267,10 +272,10 @@ export function SecuritySettings() {
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="new-password">New Password</Label>
+							<Label htmlFor={newPasswordId}>New Password</Label>
 							<div className="relative">
 								<Input
-									id="new-password"
+									id={newPasswordId}
 									type={showNewPassword ? "text" : "password"}
 									value={passwords.new}
 									onChange={(e) =>
@@ -296,10 +301,10 @@ export function SecuritySettings() {
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="confirm-password">Confirm New Password</Label>
+							<Label htmlFor={confirmPasswordId}>Confirm New Password</Label>
 							<div className="relative">
 								<Input
-									id="confirm-password"
+									id={confirmPasswordId}
 									type={showConfirmPassword ? "text" : "password"}
 									value={passwords.confirm}
 									onChange={(e) =>
@@ -374,9 +379,9 @@ export function SecuritySettings() {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="session-timeout">Session Timeout (minutes)</Label>
+						<Label htmlFor={sessionTimeoutId}>Session Timeout (minutes)</Label>
 						<Input
-							id="session-timeout"
+							id={sessionTimeoutId}
 							type="number"
 							min="5"
 							max="120"
@@ -384,7 +389,7 @@ export function SecuritySettings() {
 							onChange={(e) =>
 								handleSecurityUpdate(
 									"sessionTimeout",
-									Number.parseInt(e.target.value),
+									Number.parseInt(e.target.value, 10),
 								)
 							}
 							className="w-32"

@@ -204,7 +204,6 @@ export function ReportsPage({ className }: ReportsPageProps) {
 
 	// Performance optimization hooks
 	const {
-		filteredTransactions,
 		isLoading: isFilterLoading,
 		error: filterError,
 		performanceStats,
@@ -316,7 +315,7 @@ export function ReportsPage({ className }: ReportsPageProps) {
 		return () => clearTimeout(timeoutId);
 	}, [generateReports]);
 
-	const handleExport = async (format: ExportFormat) => {
+	const _handleExport = async (format: ExportFormat) => {
 		if (!financialSummary) return;
 
 		try {

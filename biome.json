@@ -16,13 +16,15 @@
 			"correctness": {
 				"noUnusedImports": "error",
 				"noUnusedVariables": "error"
+			},
+			"suspicious": {
+				"noUnknownAtRules": {
+					"level": "off"
+				}
 			}
 		}
 	},
 	"files": {
-		"includes": [
-			"src/**/*.{js,jsx,ts,tsx,json,css}",
-			"*.{js,ts,json,md}"
-		]
+		"includes": ["src/**/*.{js,jsx,ts,tsx,json,css}", "*.{js,ts,json,md}"]
 	}
 }

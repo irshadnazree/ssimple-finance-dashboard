@@ -79,7 +79,29 @@ export default function FinanceChart({
 		} finally {
 			setLoading(false);
 		}
-	}, [timeframe, getTransactions, groupTransactionsByPeriod]);
+	}, [timeframe, getTransactions]);
+
+	const getDateKey = useCallback(
+		(date: Date, groupBy: "day" | "week" | "month"): string => {
+			switch (groupBy) {
+				case "day":
+					return date.toISOString().split("T")[0];
+				case "week": {
+					const weekStart = new Date(date);
+					weekStart.setDate(date.getDate() - date.getDay());
+					return weekStart.toISOString().split("T")[0];
+				}
+				case "month":
+					return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+						2,
+						"0",
+					)}`;
+				default:
+					return date.toISOString().split("T")[0];
+			}
+		},
+		[],
+	);
 
 	const groupTransactionsByPeriod = useCallback(
 		(
@@ -142,28 +164,6 @@ export default function FinanceChart({
 	useEffect(() => {
 		loadChartData();
 	}, [loadChartData]);
-
-	const getDateKey = (
-		date: Date,
-		groupBy: "day" | "week" | "month",
-	): string => {
-		switch (groupBy) {
-			case "day":
-				return date.toISOString().split("T")[0];
-			case "week": {
-				const weekStart = new Date(date);
-				weekStart.setDate(date.getDate() - date.getDay());
-				return weekStart.toISOString().split("T")[0];
-			}
-			case "month":
-				return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-					2,
-					"0",
-				)}`;
-			default:
-				return date.toISOString().split("T")[0];
-		}
-	};
 
 	const formatCurrency = (amount: number) => {
 		return new Intl.NumberFormat("en-US", {

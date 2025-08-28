@@ -1,29 +1,27 @@
 import { format } from "date-fns";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import {
-	Area,
-	AreaChart,
-	Bar,
-	BarChart,
-	CartesianGrid,
-	Cell,
-	ComposedChart,
-	Legend,
-	Line,
-	LineChart,
-	Pie,
-	PieChart,
-	ResponsiveContainer,
-	Tooltip,
-	XAxis,
-	YAxis,
+    Area,
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    ComposedChart,
+    Legend,
+    Line,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
 } from "recharts";
 import type {
-	AccountPerformanceReport,
-	CashFlowReport,
-	CategoryBreakdownReport,
-	FinancialSummaryReport,
-	TransactionAnalysisReport,
+    AccountPerformanceReport,
+    CashFlowReport,
+    CategoryBreakdownReport,
+    FinancialSummaryReport,
+    TransactionAnalysisReport,
 } from "../../types/finance";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";

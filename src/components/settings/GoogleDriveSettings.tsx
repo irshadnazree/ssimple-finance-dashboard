@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { SyncResult } from "../../lib/sync/googleDrive";
 import {
-	getGoogleDriveSync,
-	initializeGoogleDriveSync,
+    getGoogleDriveSync,
+    initializeGoogleDriveSync,
 } from "../../lib/sync/googleDrive";
 import { useTransactionStore } from "../../stores/transactionStore";
 import type { SyncStatus } from "../../types/finance";
@@ -67,7 +67,7 @@ export default function GoogleDriveSettings() {
 		initializeGoogleDriveSync(config);
 		checkConnectionStatus();
 		loadSyncStats();
-	}, []);
+	}, [checkConnectionStatus, loadSyncStats]);
 
 	// Load sync status periodically
 	useEffect(() => {
@@ -78,7 +78,7 @@ export default function GoogleDriveSettings() {
 		}, 30000); // Check every 30 seconds
 
 		return () => clearInterval(interval);
-	}, [isConnected]);
+	}, [isConnected, loadSyncStatus]);
 
 	const checkConnectionStatus = async () => {
 		try {
@@ -145,7 +145,7 @@ export default function GoogleDriveSettings() {
 				const authUrl = driveSync.getAuthUrl();
 				window.location.href = authUrl;
 			}
-		} catch (err) {
+		} catch (_err) {
 			setError("Failed to connect to Google Drive");
 		}
 	};
@@ -159,7 +159,7 @@ export default function GoogleDriveSettings() {
 				setSyncStatus(null);
 				setSuccess("Disconnected from Google Drive");
 			}
-		} catch (err) {
+		} catch (_err) {
 			setError("Failed to disconnect from Google Drive");
 		}
 	};
@@ -199,7 +199,7 @@ export default function GoogleDriveSettings() {
 			setUploadProgress(50);
 
 			// Process the data using transaction store
-			const result = await importTransactions(JSON.stringify(data), "json");
+			const _result = await importTransactions(JSON.stringify(data), "json");
 			setUploadProgress(100);
 
 			setUploadResult({

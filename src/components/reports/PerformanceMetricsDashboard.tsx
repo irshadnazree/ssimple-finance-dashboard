@@ -1,16 +1,16 @@
 import {
-	AlertTriangle,
-	BarChart3,
-	CheckCircle,
-	DollarSign,
-	PieChart,
-	Target,
-	TrendingDown,
-	TrendingUp,
+    AlertTriangle,
+    BarChart3,
+    CheckCircle,
+    DollarSign,
+    PieChart,
+    Target,
+    TrendingDown,
+    TrendingUp,
 } from "lucide-react";
 import type {
-	FinancialSummaryReport,
-	PerformanceMetrics,
+    FinancialSummaryReport,
+    PerformanceMetrics,
 } from "../../types/finance";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
@@ -189,7 +189,7 @@ function HealthScoreGauge({ score }: { score: number }) {
 
 function QuickInsights({
 	metrics,
-	financialSummary,
+	financialSummary: _financialSummary,
 }: PerformanceMetricsDashboardProps) {
 	const insights = [];
 

@@ -1,5 +1,5 @@
 import { Bell, Mail, Smartphone, Volume2 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useToast } from "../../lib/hooks/useToast";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -52,6 +52,8 @@ export function NotificationSettings() {
 	});
 
 	const { toast } = useToast();
+	const startTimeId = useId();
+	const endTimeId = useId();
 
 	const handleEmailNotificationChange = (
 		key: keyof NotificationData["emailNotifications"],
@@ -323,9 +325,9 @@ export function NotificationSettings() {
 						{notificationData.quietHours.enabled && (
 							<div className="grid grid-cols-2 gap-4 pl-4">
 								<div className="space-y-2">
-									<Label htmlFor="start-time">Start Time</Label>
+									<Label htmlFor={startTimeId}>Start Time</Label>
 									<input
-										id="start-time"
+										id={startTimeId}
 										type="time"
 										value={notificationData.quietHours.startTime}
 										onChange={(e) =>
@@ -335,9 +337,9 @@ export function NotificationSettings() {
 									/>
 								</div>
 								<div className="space-y-2">
-									<Label htmlFor="end-time">End Time</Label>
+									<Label htmlFor={endTimeId}>End Time</Label>
 									<input
-										id="end-time"
+										id={endTimeId}
 										type="time"
 										value={notificationData.quietHours.endTime}
 										onChange={(e) =>

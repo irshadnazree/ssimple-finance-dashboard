@@ -1,31 +1,21 @@
 // Using basic div structure instead of tabs for simplicity
+import { Activity, Database, RefreshCw, Settings, Zap } from "lucide-react";
+import { useState } from "react";
 import {
-	Activity,
-	BarChart3,
-	Clock,
-	Database,
-	RefreshCw,
-	Settings,
-	TrendingUp,
-	Zap,
-} from "lucide-react";
-import type React from "react";
-import { useEffect, useState } from "react";
-import {
-	useComputationCache,
-	useLazyLoading,
-	usePerformanceMonitor,
+    useComputationCache,
+    useLazyLoading,
+    usePerformanceMonitor,
 } from "../../lib/hooks/useReportPerformance";
 // Performance service functionality is simulated in this demo
 import type { Transaction } from "../../types/finance";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from "../ui/card";
 import { Progress } from "../ui/progress";
 
@@ -39,7 +29,7 @@ export function PerformanceDemo({ transactions }: PerformanceDemoProps) {
 	const [results, setResults] = useState<Record<string, unknown>>({});
 
 	// Performance monitoring
-	const { renderTime, renderCount, logPerformance } =
+	const { renderTime, renderCount, logPerformance: _logPerformance } =
 		usePerformanceMonitor("PerformanceDemo");
 
 	// Lazy loading demo
@@ -102,7 +92,7 @@ export function PerformanceDemo({ transactions }: PerformanceDemoProps) {
 		const startTime = performance.now();
 
 		// Simulate query optimization
-		const filters = {
+		const _filters = {
 			accounts: [],
 			categories: [],
 			transactionTypes: ["expense" as const],

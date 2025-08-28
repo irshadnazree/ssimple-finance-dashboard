@@ -1,6 +1,6 @@
-import { Calendar, Mail, MapPin, Phone, User } from "lucide-react";
-import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar, Mail, MapPin, Phone, User } from "lucide-react";
+import { useId, useState } from "react";
 import { useToast } from "../../lib/hooks/useToast";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -29,6 +29,14 @@ export function ProfileSettings() {
 		dateOfBirth: "1990-01-15",
 		bio: "Financial enthusiast focused on building wealth and achieving financial independence.",
 	});
+
+	const firstNameId = useId();
+	const lastNameId = useId();
+	const emailId = useId();
+	const phoneId = useId();
+	const addressId = useId();
+	const dateOfBirthId = useId();
+	const bioId = useId();
 
 	const handleSave = (_e: React.FormEvent) => {
 		// Here you would typically save to your backend
@@ -75,9 +83,9 @@ export function ProfileSettings() {
 				<CardContent className="space-y-6">
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div className="space-y-2">
-							<Label htmlFor="firstName">First Name</Label>
+							<Label htmlFor={firstNameId}>First Name</Label>
 							<Input
-								id="firstName"
+								id={firstNameId}
 								value={profileData.firstName}
 								onChange={(e) => handleInputChange("firstName", e.target.value)}
 								disabled={!isEditing}
@@ -85,9 +93,9 @@ export function ProfileSettings() {
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="lastName">Last Name</Label>
+							<Label htmlFor={lastNameId}>Last Name</Label>
 							<Input
-								id="lastName"
+								id={lastNameId}
 								value={profileData.lastName}
 								onChange={(e) => handleInputChange("lastName", e.target.value)}
 								disabled={!isEditing}
@@ -97,12 +105,12 @@ export function ProfileSettings() {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="email" className="flex items-center gap-2">
+						<Label htmlFor={emailId} className="flex items-center gap-2">
 							<Mail className="h-4 w-4" />
 							Email Address
 						</Label>
 						<Input
-							id="email"
+							id={emailId}
 							type="email"
 							value={profileData.email}
 							onChange={(e) => handleInputChange("email", e.target.value)}
@@ -112,12 +120,12 @@ export function ProfileSettings() {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="phone" className="flex items-center gap-2">
+						<Label htmlFor={phoneId} className="flex items-center gap-2">
 							<Phone className="h-4 w-4" />
 							Phone Number
 						</Label>
 						<Input
-							id="phone"
+							id={phoneId}
 							type="tel"
 							value={profileData.phone}
 							onChange={(e) => handleInputChange("phone", e.target.value)}
@@ -127,12 +135,12 @@ export function ProfileSettings() {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="address" className="flex items-center gap-2">
+						<Label htmlFor={addressId} className="flex items-center gap-2">
 							<MapPin className="h-4 w-4" />
 							Address
 						</Label>
 						<Input
-							id="address"
+							id={addressId}
 							value={profileData.address}
 							onChange={(e) => handleInputChange("address", e.target.value)}
 							disabled={!isEditing}
@@ -141,12 +149,12 @@ export function ProfileSettings() {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="dateOfBirth" className="flex items-center gap-2">
+						<Label htmlFor={dateOfBirthId} className="flex items-center gap-2">
 							<Calendar className="h-4 w-4" />
 							Date of Birth
 						</Label>
 						<Input
-							id="dateOfBirth"
+							id={dateOfBirthId}
 							type="date"
 							value={profileData.dateOfBirth}
 							onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
@@ -156,9 +164,9 @@ export function ProfileSettings() {
 					</div>
 
 					<div className="space-y-2">
-						<Label htmlFor="bio">Bio</Label>
+						<Label htmlFor={bioId}>Bio</Label>
 						<Textarea
-							id="bio"
+							id={bioId}
 							value={profileData.bio}
 							onChange={(e) => handleInputChange("bio", e.target.value)}
 							disabled={!isEditing}
