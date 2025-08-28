@@ -22,6 +22,7 @@ import {
 import { CryptoUtils } from '../lib/encryption/crypto';
 import { SessionManager } from '../lib/auth/sessionManager';
 import { biometricAuthService } from '../lib/auth/biometricAuthService';
+import { pinAuthService } from '../lib/auth/pinAuthService';
 
 interface AuthStoreState {
   // State
@@ -103,6 +104,16 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       // Initialize session manager
       const sessionManager = SessionManager.getInstance();
       set({ sessionManager });
+      
+      // Initialize SessionManager with authService reference
+      // We'll pass a reference to the store's methods that SessionManager needs
+      const authServiceProxy = {
+        isAuthenticated: () => get().isAuthenticated(),
+        logout: () => get().logout(),
+        addEventListener: (event: string, callback: (event: AuthEvent) => void) => get().addEventListener(event, callback),
+         emitEvent: (event: AuthEvent) => get().emitEvent(event)
+      };
+      sessionManager.initialize(undefined, authServiceProxy);
       
       // Load existing configuration or create default
       const config = get().loadConfig();
@@ -371,15 +382,10 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
   
   setupPinAuth: async (pin: string) => {
     try {
-      const hashedPin = await CryptoUtils.hashPin(pin);
-      const pinCredentials: PinCredentials = {
-        hash: hashedPin.hash,
-        salt: hashedPin.salt,
-        iterations: hashedPin.iterations,
-        createdAt: Date.now()
-      };
-      
-      localStorage.setItem(AUTH_STORAGE_KEYS.PIN_CREDENTIALS, JSON.stringify(pinCredentials));
+      const result = await pinAuthService.setup(pin);
+      if (!result.success) {
+        return result;
+      }
       
       const state = get();
       const updatedConfig = { ...state.authState.config, pinEnabled: true, requireAuth: true };
@@ -436,7 +442,8 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       }
       
       const credentials: PinCredentials = JSON.parse(storedCredentials);
-      const isValid = await CryptoUtils.verifyPin(pin, credentials.hash, credentials.salt, credentials.iterations);
+      const result = await pinAuthService.authenticate(pin);
+        const isValid = result.success;
       
       if (isValid) {
         const session = get().createSession('pin');

@@ -372,7 +372,7 @@ export class AuthService {
       this.saveAuthState();
       
       // Start session manager monitoring
-      this.sessionManager.initialize();
+      this.sessionManager.initialize(undefined, this);
       
       this.emitEvent({
         type: 'login',

@@ -1,5 +1,4 @@
-import type { AuthSession, AuthEvent } from '../../types/auth';
-import { authService } from './authService';
+import type { AuthEvent } from "../../types/auth";
 
 /**
  * Session Manager for handling authentication sessions with advanced features
@@ -9,444 +8,504 @@ import { authService } from './authService';
  * - Cross-tab session synchronization
  */
 export class SessionManager {
-  private static instance: SessionManager;
-  private sessionCheckInterval: NodeJS.Timeout | null = null;
-  private idleCheckInterval: NodeJS.Timeout | null = null;
-  private lastActivity: number = Date.now();
-  private idleTimeout: number = 5 * 60 * 1000; // 5 minutes default
-  private sessionTimeout: number = 30 * 60 * 1000; // 30 minutes default
-  private isActive = true;
-  private eventListeners = new Set<(event: SessionEvent) => void>();
-  private activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+	private static instance: SessionManager;
+	private sessionCheckInterval: NodeJS.Timeout | null = null;
+	private idleCheckInterval: NodeJS.Timeout | null = null;
+	private lastActivity: number = Date.now();
+	private idleTimeout: number = 5 * 60 * 1000; // 5 minutes default
+	private sessionTimeout: number = 30 * 60 * 1000; // 30 minutes default
+	private isActive = true;
+	private eventListeners = new Set<(event: SessionEvent) => void>();
+	private activityEvents = [
+		"mousedown",
+		"mousemove",
+		"keypress",
+		"scroll",
+		"touchstart",
+		"click",
+	];
+	private authService: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-  private constructor() {
-    this.setupActivityListeners();
-    this.setupStorageListener();
-  }
+	private constructor() {
+		this.setupActivityListeners();
+		this.setupStorageListener();
+	}
 
-  public static getInstance(): SessionManager {
-    if (!SessionManager.instance) {
-      SessionManager.instance = new SessionManager();
-    }
-    return SessionManager.instance;
-  }
+	public static getInstance(): SessionManager {
+		if (!SessionManager.instance) {
+			SessionManager.instance = new SessionManager();
+		}
+		return SessionManager.instance;
+	}
 
-  /**
-   * Initialize session management
-   */
-  public async initialize(config?: SessionConfig): Promise<void> {
-    if (config) {
-      this.idleTimeout = config.idleTimeout * 60 * 1000;
-      this.sessionTimeout = config.sessionTimeout * 60 * 1000;
-    }
+	/**
+	 * Initialize session management
+	 */
+	public initialize(
+		config?: Partial<SessionConfig>,
+		authServiceInstance?: any,
+	): void {
+		// eslint-disable-line @typescript-eslint/no-explicit-any
+		if (authServiceInstance) {
+			this.authService = authServiceInstance;
+		}
 
-    this.startSessionMonitoring();
-    this.startIdleDetection();
-    
-    // Listen to auth events
-    authService.addEventListener('login', this.handleAuthLogin.bind(this));
-    authService.addEventListener('logout', this.handleAuthLogout.bind(this));
-  }
+		if (config) {
+			if (config.idleTimeout !== undefined) {
+				this.idleTimeout = config.idleTimeout * 60 * 1000;
+			}
+			if (config.sessionTimeout !== undefined) {
+				this.sessionTimeout = config.sessionTimeout * 60 * 1000;
+			}
+		}
 
-  /**
-   * Start session monitoring
-   */
-  private startSessionMonitoring(): void {
-    // Check session validity every minute
-    this.sessionCheckInterval = setInterval(() => {
-      this.checkSessionValidity();
-    }, 60000);
-  }
+		this.startSessionMonitoring();
+		this.startIdleDetection();
 
-  /**
-   * Start idle detection
-   */
-  private startIdleDetection(): void {
-    // Check for idle state every 30 seconds
-    this.idleCheckInterval = setInterval(() => {
-      this.checkIdleState();
-    }, 30000);
-  }
+		// Listen to auth events if authService is available
+		if (this.authService) {
+			this.authService.addEventListener("login", this.handleLogin.bind(this));
+			this.authService.addEventListener("logout", this.handleLogout.bind(this));
+		}
+	}
 
-  /**
-   * Setup activity listeners
-   */
-  private setupActivityListeners(): void {
-    for (const event of this.activityEvents) {
-      document.addEventListener(event, this.handleUserActivity.bind(this), true);
-    }
+	/**
+	 * Start session monitoring
+	 */
+	private startSessionMonitoring(): void {
+		// Check session validity every minute
+		this.sessionCheckInterval = setInterval(() => {
+			this.checkSessionValidity();
+		}, 60000);
+	}
 
-    // Listen for visibility changes
-    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
-    
-    // Listen for focus/blur events
-    window.addEventListener('focus', this.handleWindowFocus.bind(this));
-    window.addEventListener('blur', this.handleWindowBlur.bind(this));
-  }
+	/**
+	 * Start idle detection
+	 */
+	private startIdleDetection(): void {
+		// Check for idle state every 30 seconds
+		this.idleCheckInterval = setInterval(() => {
+			this.checkIdleState();
+		}, 30000);
+	}
 
-  /**
-   * Setup storage listener for cross-tab synchronization
-   */
-  private setupStorageListener(): void {
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'auth_session_sync') {
-        const data = event.newValue ? JSON.parse(event.newValue) : null;
-        if (data?.action === 'logout') {
-          this.handleCrossTabLogout();
-        }
-      }
-    });
-  }
+	/**
+	 * Setup activity listeners
+	 */
+	private setupActivityListeners(): void {
+		for (const event of this.activityEvents) {
+			document.addEventListener(
+				event,
+				this.handleUserActivity.bind(this),
+				true,
+			);
+		}
 
-  /**
-   * Handle user activity
-   */
-  private handleUserActivity(): void {
-    this.lastActivity = Date.now();
-    
-    // Update session activity if authenticated
-    const authState = authService.getAuthState();
-    if (authState.session && authState.status === 'authenticated') {
-      this.updateSessionActivity();
-    }
-  }
+		// Listen for visibility changes
+		document.addEventListener(
+			"visibilitychange",
+			this.handleVisibilityChange.bind(this),
+		);
 
-  /**
-   * Handle visibility change
-   */
-  private handleVisibilityChange(): void {
-    if (document.hidden) {
-      this.isActive = false;
-      this.emitEvent({
-        type: 'session_inactive',
-        timestamp: Date.now(),
-        metadata: { reason: 'tab_hidden' }
-      });
-    } else {
-      this.isActive = true;
-      this.handleUserActivity();
-      this.emitEvent({
-        type: 'session_active',
-        timestamp: Date.now(),
-        metadata: { reason: 'tab_visible' }
-      });
-    }
-  }
+		// Listen for focus/blur events
+		window.addEventListener("focus", this.handleWindowFocus.bind(this));
+		window.addEventListener("blur", this.handleWindowBlur.bind(this));
+	}
 
-  /**
-   * Handle window focus
-   */
-  private handleWindowFocus(): void {
-    this.isActive = true;
-    this.handleUserActivity();
-    this.checkSessionValidity();
-  }
+	/**
+	 * Setup storage listener for cross-tab synchronization
+	 */
+	private setupStorageListener(): void {
+		window.addEventListener("storage", (event) => {
+			if (event.key === "auth_session_sync") {
+				const data = event.newValue ? JSON.parse(event.newValue) : null;
+				if (data?.action === "logout") {
+					this.handleCrossTabLogout();
+				}
+			}
+		});
+	}
 
-  /**
-   * Handle window blur
-   */
-  private handleWindowBlur(): void {
-    this.isActive = false;
-  }
+	/**
+	 * Handle user activity
+	 */
+	private handleUserActivity(): void {
+		this.lastActivity = Date.now();
 
-  /**
-   * Check session validity
-   */
-  private checkSessionValidity(): void {
-    const authState = authService.getAuthState();
-    
-    if (!authState.session || authState.status !== 'authenticated') {
-      return;
-    }
+		// Update session activity if authenticated
+		if (this.authService) {
+			const authState = this.authService.getAuthState();
+			if (authState.session && authState.status === "authenticated") {
+				this.updateSessionActivity();
+			}
+		}
+	}
 
-    const now = Date.now();
-    const session = authState.session;
+	/**
+	 * Handle visibility change
+	 */
+	private handleVisibilityChange(): void {
+		if (document.hidden) {
+			this.isActive = false;
+			this.emitEvent({
+				type: "session_inactive",
+				timestamp: Date.now(),
+				metadata: { reason: "tab_hidden" },
+			});
+		} else {
+			this.isActive = true;
+			this.handleUserActivity();
+			this.emitEvent({
+				type: "session_active",
+				timestamp: Date.now(),
+				metadata: { reason: "tab_visible" },
+			});
+		}
+	}
 
-    // Check if session has expired
-    if (session.expiresAt <= now) {
-      this.handleSessionExpired('timeout');
-      return;
-    }
+	/**
+	 * Handle window focus
+	 */
+	private handleWindowFocus(): void {
+		this.isActive = true;
+		this.handleUserActivity();
+		this.checkSessionValidity();
+	}
 
-    // Check if session has been inactive too long
-    const timeSinceActivity = now - session.lastActivity;
-    if (timeSinceActivity >= this.sessionTimeout) {
-      this.handleSessionExpired('inactivity');
-      return;
-    }
+	/**
+	 * Handle window blur
+	 */
+	private handleWindowBlur(): void {
+		this.isActive = false;
+	}
 
-    // Warn user if session is about to expire (5 minutes before)
-    const timeUntilExpiry = session.expiresAt - now;
-    if (timeUntilExpiry <= 5 * 60 * 1000 && timeUntilExpiry > 4 * 60 * 1000) {
-      this.emitEvent({
-        type: 'session_warning',
-        timestamp: now,
-        metadata: { 
-          expiresIn: timeUntilExpiry,
-          reason: 'approaching_timeout'
-        }
-      });
-    }
-  }
+	/**
+	 * Check session validity
+	 */
+	private checkSessionValidity(): void {
+		if (!this.authService) return;
 
-  /**
-   * Check idle state
-   */
-  private checkIdleState(): void {
-    const authState = authService.getAuthState();
-    
-    if (!authState.session || authState.status !== 'authenticated') {
-      return;
-    }
+		const authState = this.authService.getAuthState();
 
-    const now = Date.now();
-    const timeSinceActivity = now - this.lastActivity;
+		if (!authState.session || authState.status !== "authenticated") {
+			return;
+		}
 
-    if (timeSinceActivity >= this.idleTimeout) {
-      this.handleIdleTimeout();
-    }
-  }
+		const now = Date.now();
+		const session = authState.session;
 
-  /**
-   * Handle session expiration
-   */
-  private handleSessionExpired(reason: 'timeout' | 'inactivity'): void {
-    this.emitEvent({
-      type: 'session_expired',
-      timestamp: Date.now(),
-      metadata: { reason }
-    });
+		// Check if session has expired
+		if (session.expiresAt <= now) {
+			this.handleSessionExpired("timeout");
+			return;
+		}
 
-    // Logout user
-    authService.logout();
-    
-    // Notify other tabs
-    this.broadcastLogout(reason);
-  }
+		// Check if session has been inactive too long
+		const timeSinceActivity = now - session.lastActivity;
+		if (timeSinceActivity >= this.sessionTimeout) {
+			this.handleSessionExpired("inactivity");
+			return;
+		}
 
-  /**
-   * Handle idle timeout
-   */
-  private handleIdleTimeout(): void {
-    this.emitEvent({
-      type: 'session_idle',
-      timestamp: Date.now(),
-      metadata: { 
-        idleDuration: Date.now() - this.lastActivity,
-        threshold: this.idleTimeout
-      }
-    });
+		// Warn user if session is about to expire (5 minutes before)
+		const timeUntilExpiry = session.expiresAt - now;
+		if (timeUntilExpiry <= 5 * 60 * 1000 && timeUntilExpiry > 4 * 60 * 1000) {
+			this.emitEvent({
+				type: "session_warning",
+				timestamp: now,
+				metadata: {
+					expiresIn: timeUntilExpiry,
+					reason: "approaching_timeout",
+				},
+			});
+		}
+	}
 
-    // Auto-logout on idle
-    this.handleSessionExpired('inactivity');
-  }
+	/**
+	 * Check idle state
+	 */
+	private checkIdleState(): void {
+		if (!this.authService) return;
 
-  /**
-   * Handle auth login event
-   */
-  private handleAuthLogin(event: AuthEvent): void {
-    this.lastActivity = Date.now();
-    this.isActive = true;
-    
-    this.emitEvent({
-      type: 'session_started',
-      timestamp: event.timestamp,
-      metadata: { method: event.method }
-    });
-  }
+		const authState = this.authService.getAuthState();
 
-  /**
-   * Handle auth logout event
-   */
-  private handleAuthLogout(event: AuthEvent): void {
-    this.emitEvent({
-      type: 'session_ended',
-      timestamp: event.timestamp,
-      metadata: { method: event.method }
-    });
-  }
+		if (!authState.session || authState.status !== "authenticated") {
+			return;
+		}
 
-  /**
-   * Handle cross-tab logout
-   */
-  private handleCrossTabLogout(): void {
-    if (authService.isAuthenticated()) {
-      authService.logout();
-      this.emitEvent({
-        type: 'session_ended',
-        timestamp: Date.now(),
-        metadata: { reason: 'cross_tab_logout' }
-      });
-    }
-  }
+		const now = Date.now();
+		const timeSinceActivity = now - this.lastActivity;
 
-  /**
-   * Update session activity
-   */
-  private updateSessionActivity(): void {
-    const authState = authService.getAuthState();
-    if (authState.session) {
-      authState.session.lastActivity = Date.now();
-      // Save updated session
-      localStorage.setItem('auth_session', JSON.stringify(authState.session));
-    }
-  }
+		if (timeSinceActivity >= this.idleTimeout) {
+			this.handleIdleTimeout();
+		}
+	}
 
-  /**
-   * Broadcast logout to other tabs
-   */
-  private broadcastLogout(reason: string): void {
-    localStorage.setItem('auth_session_sync', JSON.stringify({
-      action: 'logout',
-      reason,
-      timestamp: Date.now()
-    }));
-    
-    // Remove the sync item after a short delay
-    setTimeout(() => {
-      localStorage.removeItem('auth_session_sync');
-    }, 1000);
-  }
+	/**
+	 * Handle session expiration
+	 */
+	private handleSessionExpired(reason: "timeout" | "inactivity"): void {
+		this.emitEvent({
+			type: "session_expired",
+			timestamp: Date.now(),
+			metadata: { reason },
+		});
 
-  /**
-   * Extend current session
-   */
-  public extendSession(minutes = 30): boolean {
-    const authState = authService.getAuthState();
-    
-    if (!authState.session || authState.status !== 'authenticated') {
-      return false;
-    }
+		// Logout user
+		if (this.authService) {
+			this.authService.logout();
+		}
 
-    const now = Date.now();
-    authState.session.expiresAt = now + (minutes * 60 * 1000);
-    authState.session.lastActivity = now;
-    
-    // Save updated session
-    localStorage.setItem('auth_session', JSON.stringify(authState.session));
-    
-    this.emitEvent({
-      type: 'session_extended',
-      timestamp: now,
-      metadata: { extensionMinutes: minutes }
-    });
+		// Notify other tabs
+		this.broadcastLogout(reason);
+	}
 
-    return true;
-  }
+	/**
+	 * Handle idle timeout
+	 */
+	private handleIdleTimeout(): void {
+		this.emitEvent({
+			type: "session_idle",
+			timestamp: Date.now(),
+			metadata: {
+				idleDuration: Date.now() - this.lastActivity,
+				threshold: this.idleTimeout,
+			},
+		});
 
-  /**
-   * Get session info
-   */
-  public getSessionInfo(): SessionInfo | null {
-    const authState = authService.getAuthState();
-    
-    if (!authState.session || authState.status !== 'authenticated') {
-      return null;
-    }
+		// Auto-logout on idle
+		this.handleSessionExpired("inactivity");
+	}
 
-    const now = Date.now();
-    const session = authState.session;
-    
-    return {
-      id: session.id,
-      createdAt: session.createdAt,
-      expiresAt: session.expiresAt,
-      lastActivity: session.lastActivity,
-      timeRemaining: Math.max(0, session.expiresAt - now),
-      timeSinceActivity: now - session.lastActivity,
-      isIdle: (now - this.lastActivity) >= this.idleTimeout,
-      isActive: this.isActive
-    };
-  }
+	/**
+	 * Handle auth login event
+	 */
+	private handleLogin(event: AuthEvent): void {
+		this.lastActivity = Date.now();
+		this.isActive = true;
 
-  /**
-   * Add event listener
-   */
-  public addEventListener(callback: (event: SessionEvent) => void): void {
-    this.eventListeners.add(callback);
-  }
+		this.emitEvent({
+			type: "session_started",
+			timestamp: event.timestamp,
+			metadata: { method: event.method },
+		});
+	}
 
-  /**
-   * Remove event listener
-   */
-  public removeEventListener(callback: (event: SessionEvent) => void): void {
-    this.eventListeners.delete(callback);
-  }
+	/**
+	 * Handle auth logout event
+	 */
+	private handleLogout(event: AuthEvent): void {
+		this.emitEvent({
+			type: "session_ended",
+			timestamp: event.timestamp,
+			metadata: { method: event.method },
+		});
+	}
 
-  /**
-   * Emit session event
-   */
-  private emitEvent(event: SessionEvent): void {
-    for (const callback of this.eventListeners) {
-      try {
-        callback(event);
-      } catch (error) {
-        console.error('Error in session event listener:', error);
-      }
-    }
-  }
+	/**
+	 * Handle cross-tab logout
+	 */
+	private handleCrossTabLogout(): void {
+		if (this.authService && this.authService.isAuthenticated()) {
+			this.authService?.logout();
+			this.emitEvent({
+				type: "session_ended",
+				timestamp: Date.now(),
+				metadata: { reason: "cross_tab_logout" },
+			});
+		}
+	}
 
-  /**
-   * Update configuration
-   */
-  public updateConfig(config: Partial<SessionConfig>): void {
-    if (config.idleTimeout !== undefined) {
-      this.idleTimeout = config.idleTimeout * 60 * 1000;
-    }
-    if (config.sessionTimeout !== undefined) {
-      this.sessionTimeout = config.sessionTimeout * 60 * 1000;
-    }
-  }
+	/**
+	 * Update session activity
+	 */
+	private updateSessionActivity(): void {
+		if (!this.authService) return;
 
-  /**
-   * Cleanup resources
-   */
-  public destroy(): void {
-    // Clear intervals
-    if (this.sessionCheckInterval) {
-      clearInterval(this.sessionCheckInterval);
-      this.sessionCheckInterval = null;
-    }
-    if (this.idleCheckInterval) {
-      clearInterval(this.idleCheckInterval);
-      this.idleCheckInterval = null;
-    }
+		const authState = this.authService.getAuthState();
+		if (authState.session) {
+			authState.session.lastActivity = Date.now();
+			// Save updated session
+			localStorage.setItem("auth_session", JSON.stringify(authState.session));
+		}
+	}
 
-    // Remove event listeners
-    for (const event of this.activityEvents) {
-      document.removeEventListener(event, this.handleUserActivity.bind(this), true);
-    }
-    
-    document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
-    window.removeEventListener('focus', this.handleWindowFocus.bind(this));
-    window.removeEventListener('blur', this.handleWindowBlur.bind(this));
-    
-    this.eventListeners.clear();
-  }
+	/**
+	 * Broadcast logout to other tabs
+	 */
+	private broadcastLogout(reason: string): void {
+		localStorage.setItem(
+			"auth_session_sync",
+			JSON.stringify({
+				action: "logout",
+				reason,
+				timestamp: Date.now(),
+			}),
+		);
+
+		// Remove the sync item after a short delay
+		setTimeout(() => {
+			localStorage.removeItem("auth_session_sync");
+		}, 1000);
+	}
+
+	/**
+	 * Extend current session
+	 */
+	public extendSession(minutes = 30): boolean {
+		if (!this.authService) return false;
+
+		const authState = this.authService.getAuthState();
+
+		if (!authState.session || authState.status !== "authenticated") {
+			return false;
+		}
+
+		const now = Date.now();
+		authState.session.expiresAt = now + minutes * 60 * 1000;
+		authState.session.lastActivity = now;
+
+		// Save updated session
+		localStorage.setItem("auth_session", JSON.stringify(authState.session));
+
+		this.emitEvent({
+			type: "session_extended",
+			timestamp: now,
+			metadata: { extensionMinutes: minutes },
+		});
+
+		return true;
+	}
+
+	/**
+	 * Get session info
+	 */
+	public getSessionInfo(): SessionInfo | null {
+		if (!this.authService) return null;
+
+		const authState = this.authService.getAuthState();
+
+		if (!authState.session || authState.status !== "authenticated") {
+			return null;
+		}
+
+		const now = Date.now();
+		const session = authState.session;
+
+		return {
+			id: session.id,
+			createdAt: session.createdAt,
+			expiresAt: session.expiresAt,
+			lastActivity: session.lastActivity,
+			timeRemaining: Math.max(0, session.expiresAt - now),
+			timeSinceActivity: now - session.lastActivity,
+			isIdle: now - this.lastActivity >= this.idleTimeout,
+			isActive: this.isActive,
+		};
+	}
+
+	/**
+	 * Add event listener
+	 */
+	public addEventListener(callback: (event: SessionEvent) => void): void {
+		this.eventListeners.add(callback);
+	}
+
+	/**
+	 * Remove event listener
+	 */
+	public removeEventListener(callback: (event: SessionEvent) => void): void {
+		this.eventListeners.delete(callback);
+	}
+
+	/**
+	 * Emit session event
+	 */
+	private emitEvent(event: SessionEvent): void {
+		for (const callback of this.eventListeners) {
+			try {
+				callback(event);
+			} catch (error) {
+				console.error("Error in session event listener:", error);
+			}
+		}
+	}
+
+	/**
+	 * Update configuration
+	 */
+	public updateConfig(config: Partial<SessionConfig>): void {
+		if (config.idleTimeout !== undefined) {
+			this.idleTimeout = config.idleTimeout * 60 * 1000;
+		}
+		if (config.sessionTimeout !== undefined) {
+			this.sessionTimeout = config.sessionTimeout * 60 * 1000;
+		}
+	}
+
+	/**
+	 * Cleanup resources
+	 */
+	public destroy(): void {
+		// Clear intervals
+		if (this.sessionCheckInterval) {
+			clearInterval(this.sessionCheckInterval);
+			this.sessionCheckInterval = null;
+		}
+		if (this.idleCheckInterval) {
+			clearInterval(this.idleCheckInterval);
+			this.idleCheckInterval = null;
+		}
+
+		// Remove event listeners
+		for (const event of this.activityEvents) {
+			document.removeEventListener(
+				event,
+				this.handleUserActivity.bind(this),
+				true,
+			);
+		}
+
+		document.removeEventListener(
+			"visibilitychange",
+			this.handleVisibilityChange.bind(this),
+		);
+		window.removeEventListener("focus", this.handleWindowFocus.bind(this));
+		window.removeEventListener("blur", this.handleWindowBlur.bind(this));
+
+		this.eventListeners.clear();
+	}
 }
 
 // Types
 export interface SessionConfig {
-  idleTimeout: number; // minutes
-  sessionTimeout: number; // minutes
+	idleTimeout: number; // minutes
+	sessionTimeout: number; // minutes
 }
 
 export interface SessionInfo {
-  id: string;
-  createdAt: number;
-  expiresAt: number;
-  lastActivity: number;
-  timeRemaining: number;
-  timeSinceActivity: number;
-  isIdle: boolean;
-  isActive: boolean;
+	id: string;
+	createdAt: number;
+	expiresAt: number;
+	lastActivity: number;
+	timeRemaining: number;
+	timeSinceActivity: number;
+	isIdle: boolean;
+	isActive: boolean;
 }
 
 export interface SessionEvent {
-  type: 'session_started' | 'session_ended' | 'session_expired' | 'session_extended' | 
-        'session_warning' | 'session_idle' | 'session_active' | 'session_inactive';
-  timestamp: number;
-  metadata?: Record<string, unknown>;
+	type:
+		| "session_started"
+		| "session_ended"
+		| "session_expired"
+		| "session_extended"
+		| "session_warning"
+		| "session_idle"
+		| "session_active"
+		| "session_inactive";
+	timestamp: number;
+	metadata?: Record<string, unknown>;
 }
 
 // Export singleton instance
