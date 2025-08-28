@@ -30,7 +30,7 @@ export function ProfileSettings() {
 		bio: "Financial enthusiast focused on building wealth and achieving financial independence.",
 	});
 
-	const handleSave = (e: React.FormEvent) => {
+	const handleSave = (_e: React.FormEvent) => {
 		// Here you would typically save to your backend
 		console.log("Saving profile data:", profileData);
 		setIsEditing(false);

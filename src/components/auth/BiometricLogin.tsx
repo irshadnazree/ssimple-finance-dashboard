@@ -44,11 +44,7 @@ export function BiometricLogin({
 	const [attemptCount, setAttemptCount] = useState(0);
 	const maxAttempts = 3;
 
-	useEffect(() => {
-		checkBiometricCapabilities();
-	}, []);
-
-	const checkBiometricCapabilities = async () => {
+	const checkBiometricCapabilities = useCallback(async () => {
 		try {
 			const caps = await biometricAuthService.getCapabilities();
 			setCapabilities(caps);
@@ -68,7 +64,11 @@ export function BiometricLogin({
 			console.error("Biometric capability check error:", err);
 			setError("Failed to check biometric capabilities");
 		}
-	};
+	}, [setCapabilities, setError]);
+
+	useEffect(() => {
+		checkBiometricCapabilities();
+	}, [checkBiometricCapabilities]);
 
 	const handleAuthenticate = async () => {
 		if (!capabilities?.available || attemptCount >= maxAttempts) {

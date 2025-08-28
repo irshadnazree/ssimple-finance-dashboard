@@ -41,7 +41,9 @@ export function RecentActivityFeed({
 			id: transaction.id,
 			type: "transaction",
 			title: transaction.description,
-			description: `${transaction.type === "income" ? "Income" : "Expense"} • ${transaction.category}`,
+			description: `${transaction.type === "income" ? "Income" : "Expense"} • ${
+				transaction.category
+			}`,
 			timestamp: transaction.date,
 			amount: transaction.amount,
 			status: transaction.status,
@@ -163,7 +165,7 @@ export function RecentActivityFeed({
 					</div>
 				) : (
 					<div className="space-y-3">
-						{allActivities.map((activity, index) => {
+						{allActivities.map((activity, _index) => {
 							const Icon = getActivityIcon(activity.type, activity.amount);
 							const amountInfo = activity.amount
 								? formatAmount(activity.amount)
@@ -175,7 +177,9 @@ export function RecentActivityFeed({
 									className="flex items-start gap-3 p-3 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
 								>
 									<div
-										className={`p-2 rounded-full ${getStatusColor(activity.status)} bg-current/10`}
+										className={`p-2 rounded-full ${getStatusColor(
+											activity.status,
+										)} bg-current/10`}
 									>
 										<Icon className="h-3 w-3" />
 									</div>
@@ -204,7 +208,9 @@ export function RecentActivityFeed({
 											{activity.status && (
 												<Badge
 													variant="outline"
-													className={`text-xs ${getStatusColor(activity.status)}`}
+													className={`text-xs ${getStatusColor(
+														activity.status,
+													)}`}
 												>
 													{activity.status}
 												</Badge>

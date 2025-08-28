@@ -2,12 +2,11 @@ import { format } from "date-fns";
 import { Calendar, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { reportsService } from "../../lib/reports/reportsService";
-import type { DateRange, ReportPeriod } from "../../types/finance";
+import type { DateRange } from "../../types/finance";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { Select } from "../ui/select";
 
 interface DateRangeSelectorProps {
 	selectedRange: DateRange;
@@ -49,7 +48,10 @@ export function DateRangeSelector({
 			onRangeChange({
 				startDate,
 				endDate,
-				label: `${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd, yyyy")}`,
+				label: `${format(startDate, "MMM dd")} - ${format(
+					endDate,
+					"MMM dd, yyyy",
+				)}`,
 			});
 			setShowDropdown(false);
 		}
@@ -74,7 +76,10 @@ export function DateRangeSelector({
 					<Calendar className="h-4 w-4" />
 					<span>
 						{selectedRange.label ||
-							`${format(selectedRange.startDate, "MMM dd")} - ${format(selectedRange.endDate, "MMM dd, yyyy")}`}
+							`${format(selectedRange.startDate, "MMM dd")} - ${format(
+								selectedRange.endDate,
+								"MMM dd, yyyy",
+							)}`}
 					</span>
 				</div>
 				<ChevronDown
@@ -222,7 +227,10 @@ export function DateRangeDisplay({
 			<Calendar className="h-4 w-4" />
 			<span>
 				{range.label ||
-					`${format(range.startDate, "MMM dd, yyyy")} - ${format(range.endDate, "MMM dd, yyyy")}`}
+					`${format(range.startDate, "MMM dd, yyyy")} - ${format(
+						range.endDate,
+						"MMM dd, yyyy",
+					)}`}
 			</span>
 		</div>
 	);

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { biometricAuthService } from "../../lib/auth/biometricAuthService";
-import { cn } from "../../lib/utils";
+
 import { useAuthStore } from "../../stores/authStore";
 import type { AuthResult, BiometricCapabilities } from "../../types/auth";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -40,11 +40,7 @@ export function BiometricSetup({ onResult, onBack }: BiometricSetupProps) {
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	useEffect(() => {
-		checkBiometricCapabilities();
-	}, []);
-
-	const checkBiometricCapabilities = async () => {
+	const checkBiometricCapabilities = useCallback(async () => {
 		try {
 			setIsLoading(true);
 			setError(null);
@@ -71,7 +67,11 @@ export function BiometricSetup({ onResult, onBack }: BiometricSetupProps) {
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, [setCapabilities, setError, setIsLoading, setStep]);
+
+	useEffect(() => {
+		checkBiometricCapabilities();
+	}, [checkBiometricCapabilities]);
 
 	const handleSetup = async () => {
 		if (!capabilities?.available) {

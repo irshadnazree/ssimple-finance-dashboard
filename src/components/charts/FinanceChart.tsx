@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTransactionStore } from "../../stores/transactionStore";
 import type { Transaction } from "../../types/finance";
 import { Button } from "../ui/button";
@@ -79,64 +79,69 @@ export default function FinanceChart({
 		} finally {
 			setLoading(false);
 		}
-	}, [timeframe, getTransactions]);
+	}, [timeframe, getTransactions, groupTransactionsByPeriod]);
+
+	const groupTransactionsByPeriod = useCallback(
+		(
+			transactions: Transaction[],
+			groupBy: "day" | "week" | "month",
+			startDate: Date,
+			endDate: Date,
+		): ChartDataPoint[] => {
+			const groups = new Map<string, { income: number; expenses: number }>();
+
+			// Initialize all periods with zero values
+			const current = new Date(startDate);
+			while (current <= endDate) {
+				const key = getDateKey(current, groupBy);
+				groups.set(key, { income: 0, expenses: 0 });
+
+				// Increment by the appropriate period
+				switch (groupBy) {
+					case "day":
+						current.setDate(current.getDate() + 1);
+						break;
+					case "week":
+						current.setDate(current.getDate() + 7);
+						break;
+					case "month":
+						current.setMonth(current.getMonth() + 1);
+						break;
+				}
+			}
+
+			// Group transactions
+			for (const transaction of transactions) {
+				const key = getDateKey(new Date(transaction.date), groupBy);
+				const group = groups.get(key);
+
+				if (group) {
+					if (transaction.type === "income") {
+						group.income += transaction.amount;
+					} else {
+						group.expenses += transaction.amount;
+					}
+				}
+			}
+
+			// Convert to array and calculate net
+			return Array.from(groups.entries())
+				.map(([date, { income, expenses }]) => ({
+					date,
+					income,
+					expenses,
+					net: income - expenses,
+				}))
+				.sort(
+					(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+				);
+		},
+		[getDateKey],
+	);
 
 	useEffect(() => {
 		loadChartData();
 	}, [loadChartData]);
-
-	const groupTransactionsByPeriod = (
-		transactions: Transaction[],
-		groupBy: "day" | "week" | "month",
-		startDate: Date,
-		endDate: Date,
-	): ChartDataPoint[] => {
-		const groups = new Map<string, { income: number; expenses: number }>();
-
-		// Initialize all periods with zero values
-		const current = new Date(startDate);
-		while (current <= endDate) {
-			const key = getDateKey(current, groupBy);
-			groups.set(key, { income: 0, expenses: 0 });
-
-			// Increment by the appropriate period
-			switch (groupBy) {
-				case "day":
-					current.setDate(current.getDate() + 1);
-					break;
-				case "week":
-					current.setDate(current.getDate() + 7);
-					break;
-				case "month":
-					current.setMonth(current.getMonth() + 1);
-					break;
-			}
-		}
-
-		// Group transactions
-		for (const transaction of transactions) {
-			const key = getDateKey(new Date(transaction.date), groupBy);
-			const group = groups.get(key);
-
-			if (group) {
-				if (transaction.type === "income") {
-					group.income += transaction.amount;
-				} else {
-					group.expenses += transaction.amount;
-				}
-			}
-		}
-
-		// Convert to array and calculate net
-		return Array.from(groups.entries())
-			.map(([date, { income, expenses }]) => ({
-				date,
-				income,
-				expenses,
-				net: income - expenses,
-			}))
-			.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-	};
 
 	const getDateKey = (
 		date: Date,
@@ -151,7 +156,10 @@ export default function FinanceChart({
 				return weekStart.toISOString().split("T")[0];
 			}
 			case "month":
-				return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+				return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+					2,
+					"0",
+				)}`;
 			default:
 				return date.toISOString().split("T")[0];
 		}
@@ -253,7 +261,9 @@ export default function FinanceChart({
 												<div
 													className="w-4 bg-red-500 rounded-t"
 													style={{ height: `${expenseHeight}%` }}
-													title={`Expenses: ${formatCurrency(dataPoint.expenses)}`}
+													title={`Expenses: ${formatCurrency(
+														dataPoint.expenses,
+													)}`}
 												/>
 											</div>
 

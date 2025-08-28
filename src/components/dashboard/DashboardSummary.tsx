@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTransactionStore } from "../../stores/transactionStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { Transaction } from "../../types/finance";
@@ -21,8 +21,7 @@ interface SummaryData {
 export default function DashboardSummary({
 	className = "",
 }: DashboardSummaryProps) {
-	const { transactions, accounts, getTransactionSummary, refreshTransactions } =
-		useTransactionStore();
+	const { transactions, accounts, refreshTransactions } = useTransactionStore();
 	const {
 		loading: { isLoading },
 		setLoading,
@@ -35,11 +34,7 @@ export default function DashboardSummary({
 	});
 	const [error, setError] = useState<string | null>(null);
 
-	useEffect(() => {
-		loadSummaryData();
-	}, []);
-
-	const loadSummaryData = async () => {
+	const loadSummaryData = useCallback(async () => {
 		try {
 			setLoading(true, "Loading dashboard summary...");
 			setError(null);
@@ -89,7 +84,11 @@ export default function DashboardSummary({
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [accounts, transactions, refreshTransactions, setLoading]);
+
+	useEffect(() => {
+		loadSummaryData();
+	}, [loadSummaryData]);
 
 	const formatCurrency = (amount: number) => {
 		return new Intl.NumberFormat("en-US", {
