@@ -1,4 +1,19 @@
-import type { AuthEvent } from "../../types/auth";
+import type { AuthEvent, AuthResult, AuthMethod, AuthConfig, AuthState } from "../../types/auth";
+
+/**
+ * Interface for authentication service that can be used with SessionManager
+ */
+export interface IAuthService {
+	initialize(): Promise<void>;
+	setupAuth(method: AuthMethod, credentials: { pin?: string; biometricConsent?: boolean }): Promise<AuthResult>;
+	authenticate(method: AuthMethod, credentials?: { pin?: string }): Promise<AuthResult>;
+	logout(): Promise<void>;
+	updateConfig(newConfig: Partial<AuthConfig>): Promise<void>;
+	getFailedAttempts(): number;
+	isAuthenticated(): boolean;
+	getAuthState(): AuthState;
+	addEventListener(event: string, callback: (event: AuthEvent) => void): void;
+}
 
 /**
  * Session Manager for handling authentication sessions with advanced features
@@ -24,7 +39,7 @@ export class SessionManager {
 		"touchstart",
 		"click",
 	];
-	private authService: any = null; // eslint-disable-line @typescript-eslint/no-explicit-any
+	private authService: IAuthService | null = null;
 
 	private constructor() {
 		this.setupActivityListeners();
@@ -43,9 +58,8 @@ export class SessionManager {
 	 */
 	public initialize(
 		config?: Partial<SessionConfig>,
-		authServiceInstance?: any,
+		authServiceInstance?: IAuthService,
 	): void {
-		// eslint-disable-line @typescript-eslint/no-explicit-any
 		if (authServiceInstance) {
 			this.authService = authServiceInstance;
 		}
@@ -306,8 +320,8 @@ export class SessionManager {
 	 * Handle cross-tab logout
 	 */
 	private handleCrossTabLogout(): void {
-		if (this.authService && this.authService.isAuthenticated()) {
-			this.authService?.logout();
+		if (this.authService?.isAuthenticated()) {
+			this.authService.logout();
 			this.emitEvent({
 				type: "session_ended",
 				timestamp: Date.now(),
