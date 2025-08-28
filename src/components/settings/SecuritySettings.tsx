@@ -8,7 +8,7 @@ import { Switch } from "../ui/switch";
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription } from "../ui/alert";
 import { useToast } from "../../lib/hooks/useToast";
-import { authService } from "../../lib/auth/authService";
+import { useAuthStore } from "../../stores/authStore";
 import { biometricAuthService } from "../../lib/auth/biometricAuthService";
 import type { AuthState, BiometricCapabilities } from "../../types/auth";
 
@@ -27,6 +27,7 @@ interface AuthenticationData {
 }
 
 export function SecuritySettings() {
+	const { initialize, getAuthState, updateConfig } = useAuthStore();
 	const [securityData, setSecurityData] = useState<SecurityData>({
 		twoFactorEnabled: false,
 		loginNotifications: true,
@@ -61,8 +62,8 @@ export function SecuritySettings() {
 		const loadAuthState = async () => {
 			try {
 				setIsLoading(true);
-				await authService.initialize();
-				const state = await authService.getAuthState();
+				await initialize();
+				const state = await getAuthState();
 				setAuthState(state);
 
 				// Update auth data based on current state
@@ -89,7 +90,7 @@ export function SecuritySettings() {
 		};
 
 		loadAuthState();
-	}, [toast]);
+	}, [initialize, getAuthState, toast]);
 
 	const handleSecurityUpdate = (field: keyof SecurityData, value: boolean | number) => {
 		setSecurityData(prev => ({ ...prev, [field]: value }));
@@ -131,7 +132,7 @@ export function SecuritySettings() {
 
 			// Update auth service configuration
 			if (authState) {
-				await authService.updateConfig({
+				await updateConfig({
 					[field]: value
 				});
 			}
@@ -161,11 +162,11 @@ export function SecuritySettings() {
 			// This would typically show a confirmation dialog first
 			if (method === 'pin') {
 				// Reset PIN authentication
-				await authService.updateConfig({ pinEnabled: false });
+				await updateConfig({ pinEnabled: false });
 				setAuthData(prev => ({ ...prev, pinEnabled: false }));
 			} else {
 				// Reset biometric authentication
-				await authService.updateConfig({ biometricEnabled: false });
+				await updateConfig({ biometricEnabled: false });
 				setAuthData(prev => ({ ...prev, biometricEnabled: false }));
 			}
 

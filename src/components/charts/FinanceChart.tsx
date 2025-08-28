@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Transaction } from '../../types/finance';
-import { transactionManager } from '../../lib/transactions/transactionManager';
+import { useTransactionStore } from '../../stores/transactionStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 
@@ -17,6 +17,7 @@ interface FinanceChartProps {
 }
 
 export default function FinanceChart({ timeframe, className = '' }: FinanceChartProps) {
+  const { getTransactions } = useTransactionStore();
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export default function FinanceChart({ timeframe, className = '' }: FinanceChart
           break;
       }
 
-      const transactions = await transactionManager.getTransactions({
+      const transactions = getTransactions({
         startDate,
         endDate: now,
       });
@@ -66,7 +67,7 @@ export default function FinanceChart({ timeframe, className = '' }: FinanceChart
     } finally {
       setLoading(false);
     }
-  }, [timeframe]);
+  }, [timeframe, getTransactions]);
 
   useEffect(() => {
     loadChartData();

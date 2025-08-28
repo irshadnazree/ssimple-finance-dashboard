@@ -7,7 +7,8 @@ import { Select } from '../ui/select';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Badge } from '../ui/badge';
 import { LoadingSpinner } from '../ui/loading-spinner';
-import { transactionManager, type TransactionFilters } from '../../lib/transactions/transactionManager';
+import { useTransactionStore } from '../../stores/transactionStore';
+import type { TransactionFilters } from '../../stores/transactionStore';
 import { useToast } from '../../lib/hooks/useToast';
 
 interface ExportImportDialogProps {
@@ -18,7 +19,7 @@ interface ExportImportDialogProps {
 }
 
 type ExportFormat = 'json' | 'csv' | 'external-json';
-type ImportFormat = 'json' | 'csv' | 'external-json';
+type ImportFormat = 'json' | 'csv';
 
 interface ImportResult {
   success: boolean;
@@ -41,6 +42,7 @@ export function ExportImportDialog({
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
+  const { getTransactions, exportTransactions, importTransactions } = useTransactionStore();
 
   if (!isOpen) return null;
 
@@ -52,11 +54,14 @@ export function ExportImportDialog({
       let mimeType: string;
 
       if (exportFormat === 'external-json') {
-        data = await transactionManager.exportTransactionsExternal(currentFilters);
+        // Get filtered transactions and export as external format
+        const transactions = getTransactions(currentFilters);
+        data = exportTransactions(transactions, 'json');
         filename = `transactions-external-${new Date().toISOString().split('T')[0]}.json`;
         mimeType = 'application/json';
       } else {
-        data = await transactionManager.exportTransactions(currentFilters, exportFormat);
+        const transactions = getTransactions(currentFilters);
+        data = exportTransactions(transactions, exportFormat);
         filename = `transactions-${new Date().toISOString().split('T')[0]}.${exportFormat}`;
         mimeType = exportFormat === 'json' ? 'application/json' : 'text/csv';
       }
@@ -103,29 +108,29 @@ export function ExportImportDialog({
 
     try {
       const fileContent = await selectedFile.text();
-      const result = await transactionManager.importTransactions(fileContent, importFormat);
+      const result = await importTransactions(fileContent, importFormat);
 
       const importResult: ImportResult = {
-        success: result.successful.length > 0,
+        success: result.success && result.processed > 0,
         fileName: selectedFile.name,
-        recordsProcessed: result.successful.length,
-        errorMessage: result.failed.length > 0 ? `${result.failed.length} records failed to import` : undefined,
+        recordsProcessed: result.processed,
+        errorMessage: result.failed > 0 ? `${result.failed} records failed to import` : undefined,
       };
 
       setImportResult(importResult);
 
-      if (result.successful.length > 0) {
+      if (result.processed > 0) {
         toast({
           title: 'Import Successful',
-          description: `Successfully imported ${result.successful.length} transactions`,
+          description: `Successfully imported ${result.processed} transactions`,
         });
         onImportComplete?.();
       }
 
-      if (result.failed.length > 0) {
+      if (result.failed > 0) {
         toast({
-          title: 'Partial Import',
-          description: `${result.failed.length} transactions failed to import`,
+          title: 'Import Warning',
+          description: `${result.failed} records failed to import`,
           variant: 'destructive',
         });
       }

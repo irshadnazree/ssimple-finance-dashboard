@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { ArrowLeft, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { AuthResult } from '../../types/auth';
-import { pinAuthService } from '../../lib/auth/pinAuthService';
+import { useAuthStore } from '../../stores/authStore';
 
 interface PinLoginProps {
   onResult: (result: AuthResult) => void;
@@ -18,6 +18,7 @@ interface PinLoginProps {
  * Handles PIN authentication for existing users
  */
 export function PinLogin({ onResult, onBack }: PinLoginProps) {
+  const { authenticate } = useAuthStore();
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,7 +42,7 @@ export function PinLogin({ onResult, onBack }: PinLoginProps) {
     setError(null);
 
     try {
-      const result = await pinAuthService.authenticate(pin);
+      const result = await authenticate('pin', { pin });
       
       if (result.success) {
         onResult(result);

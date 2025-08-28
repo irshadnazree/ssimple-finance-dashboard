@@ -4,7 +4,7 @@ import {
 	getGoogleDriveSync,
 	initializeGoogleDriveSync,
 } from "../../lib/sync/googleDrive";
-import { transactionManager } from "../../lib/transactions/transactionManager";
+import { useTransactionStore } from "../../stores/transactionStore";
 import type { SyncStatus } from "../../types/finance";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
@@ -32,6 +32,7 @@ interface SyncStats {
 }
 
 export default function GoogleDriveSettings() {
+	const { importTransactions } = useTransactionStore();
 	const [isConnected, setIsConnected] = useState(false);
 	const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
 	const [isSyncing, setIsSyncing] = useState(false);
@@ -197,10 +198,10 @@ export default function GoogleDriveSettings() {
 
 			setUploadProgress(50);
 
-			// Process the data using transaction manager
-			const result = await transactionManager.importTransactions(
+			// Process the data using transaction store
+			const result = await importTransactions(
 				JSON.stringify(data),
-				"external-json",
+				"json",
 			);
 			setUploadProgress(100);
 

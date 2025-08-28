@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { ArrowLeft, Fingerprint, Shield, AlertCircle, RefreshCw } from 'lucide-react';
 import type { AuthResult, BiometricCapabilities } from '../../types/auth';
 import { biometricAuthService } from '../../lib/auth/biometricAuthService';
+import { useAuthStore } from '../../stores/authStore';
 
 interface BiometricLoginProps {
   onResult: (result: AuthResult) => void;
@@ -19,6 +20,7 @@ type LoginState = 'ready' | 'authenticating' | 'error';
  * Handles biometric authentication for existing users
  */
 export function BiometricLogin({ onResult, onBack, onSwitchToPin }: BiometricLoginProps) {
+  const { authenticate } = useAuthStore();
   const [state, setState] = useState<LoginState>('ready');
   const [capabilities, setCapabilities] = useState<BiometricCapabilities | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export function BiometricLogin({ onResult, onBack, onSwitchToPin }: BiometricLog
       setState('authenticating');
       setError(null);
       
-      const result = await biometricAuthService.authenticate();
+      const result = await authenticate('biometric');
       
       if (result.success) {
         onResult(result);

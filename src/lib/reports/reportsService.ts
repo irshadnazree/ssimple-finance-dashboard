@@ -14,7 +14,7 @@ import type {
 	DateRange,
 	ExportFormat,
 } from '../../types/finance';
-import { transactionManager } from '../transactions/transactionManager';
+import { useTransactionStore } from '../../stores/transactionStore';
 import { DatabaseService } from '../database/db';
 import { format, subDays, subMonths, startOfYear, endOfYear, startOfMonth, endOfMonth } from 'date-fns';
 
@@ -84,7 +84,7 @@ export class ReportsService {
 
 	// Report Generation Methods
 	async generateFinancialSummaryReport(filters: ReportFilters): Promise<FinancialSummaryReport> {
-		const transactions = await transactionManager.getTransactions({
+		const transactions = useTransactionStore.getState().getTransactions({
 			startDate: filters.dateRange.startDate,
 			endDate: filters.dateRange.endDate,
 			account: filters.accounts?.[0],
@@ -150,7 +150,7 @@ export class ReportsService {
 	}
 
 	async generateTransactionAnalysisReport(filters: ReportFilters): Promise<TransactionAnalysisReport> {
-		const transactions = await transactionManager.getTransactions({
+		const transactions = useTransactionStore.getState().getTransactions({
 			startDate: filters.dateRange.startDate,
 			endDate: filters.dateRange.endDate,
 			account: filters.accounts?.[0],
@@ -237,7 +237,7 @@ export class ReportsService {
 	}
 
 	async generateCategoryBreakdownReport(filters: ReportFilters): Promise<CategoryBreakdownReport> {
-		const transactions = await transactionManager.getTransactions({
+		const transactions = useTransactionStore.getState().getTransactions({
 			startDate: filters.dateRange.startDate,
 			endDate: filters.dateRange.endDate,
 			account: filters.accounts?.[0],
@@ -294,7 +294,7 @@ export class ReportsService {
 
 	async generateAccountPerformanceReport(filters: ReportFilters): Promise<AccountPerformanceReport> {
 		const accounts = await DatabaseService.getAccounts();
-		const transactions = await transactionManager.getTransactions({
+		const transactions = useTransactionStore.getState().getTransactions({
 			startDate: filters.dateRange.startDate,
 			endDate: filters.dateRange.endDate
 		});
@@ -380,7 +380,7 @@ export class ReportsService {
 	}
 
 	async generateCashFlowReport(filters: ReportFilters): Promise<CashFlowReport> {
-		const transactions = await transactionManager.getTransactions({
+		const transactions = useTransactionStore.getState().getTransactions({
 			startDate: filters.dateRange.startDate,
 			endDate: filters.dateRange.endDate
 		});
@@ -483,7 +483,7 @@ export class ReportsService {
 	}
 
 	async calculatePerformanceMetrics(filters: ReportFilters): Promise<PerformanceMetrics> {
-		const transactions = await transactionManager.getTransactions({
+		const transactions = useTransactionStore.getState().getTransactions({
 			startDate: filters.dateRange.startDate,
 			endDate: filters.dateRange.endDate
 		});

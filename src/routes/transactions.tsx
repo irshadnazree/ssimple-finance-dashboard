@@ -15,9 +15,9 @@ import { TransactionOperationsToolbar } from '../components/transactions/Transac
 import { TransactionFilters as TransactionFiltersComponent } from '../components/transactions/TransactionFilters';
 import { TransactionStatistics } from '../components/transactions/TransactionStatistics';
 import { TransactionsLayout, TransactionsSection, TransactionsToolbar, TransactionsContentGrid } from '../components/layout';
-import { transactionManager, type TransactionFilters, type TransactionSummary as TransactionSummaryType } from '../lib/transactions/transactionManager';
-import { DatabaseService } from '../lib/database/db';
-import { DatabaseInitService } from '../lib/database/init';
+import { useTransactionStore } from '../stores/transactionStore';
+import type { TransactionFilters } from '../stores/transactionStore';
+import type { TransactionSummary as TransactionSummaryType } from '../stores/transactionStore';
 import type { Transaction, Account, Category } from '../types/finance';
 import { useToast } from '../lib/hooks/useToast';
 
@@ -25,13 +25,23 @@ export const Route = createFileRoute('/transactions')({component: Transactions,}
 
 function Transactions() {
   const { toast } = useToast();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const {
+    transactions: storeTransactions,
+    categories: storeCategories,
+    accounts: storeAccounts,
+    isLoading,
+    error: storeError,
+    getTransactions,
+    getTransactionSummary,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+    refreshTransactions,
+    setLoading,
+    setError
+  } = useTransactionStore();
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<TransactionSummaryType | null>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [showExportImport, setShowExportImport] = useState(false);
@@ -53,10 +63,9 @@ function Transactions() {
   // Real-time status update functionality
   const updateTransactionStatus = useCallback(async (id: string, status: Transaction['status'], errorMessage?: string) => {
     try {
-      const updatedTransaction = await transactionManager.updateTransactionStatus(id, status, errorMessage);
+      const updatedTransaction = await updateTransaction(id, { status });
       if (updatedTransaction) {
-        // Update the transaction in the local state
-        setTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
+        // Update the filtered transactions
         setFilteredTransactions(prev => prev.map(t => t.id === id ? updatedTransaction : t));
         toast({
           variant: 'success',
@@ -74,15 +83,14 @@ function Transactions() {
         description: err instanceof Error ? err.message : errorMsg,
       });
     }
-  }, [toast]);
+  }, [toast, updateTransaction, setError]);
 
   // Retry failed transaction
   const retryFailedTransaction = useCallback(async (id: string) => {
     try {
-      const retryResult = await transactionManager.retryFailedTransaction(id);
+      const retryResult = await updateTransaction(id, { status: 'pending' });
       if (retryResult) {
-        // Update the transaction in the local state
-        setTransactions(prev => prev.map(t => t.id === id ? retryResult : t));
+        // Update the filtered transactions
         setFilteredTransactions(prev => prev.map(t => t.id === id ? retryResult : t));
         toast({
           variant: 'success',
@@ -100,17 +108,17 @@ function Transactions() {
         description: err instanceof Error ? err.message : errorMsg,
       });
     }
-  }, [toast]);
+  }, [toast, updateTransaction, setError]);
 
   // Auto-refresh pending transactions
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const pendingTransactions = await transactionManager.getPendingTransactions();
+        const pendingTransactions = storeTransactions.filter(t => t.status === 'pending');
         if (pendingTransactions.length > 0) {
           // Process pending transactions
           for (const transaction of pendingTransactions) {
-            await transactionManager.processTransaction(transaction);
+            await updateTransaction(transaction.id, { status: 'completed' });
           }
           // Reload data to get updated statuses
           loadData();
@@ -121,10 +129,10 @@ function Transactions() {
     }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [storeTransactions, updateTransaction]);
 
   const applyFiltersAndSearch = useCallback(() => {
-    let filtered = [...transactions];
+    let filtered = [...storeTransactions];
 
     // Apply search filter
     if (searchTerm.trim()) {
@@ -194,7 +202,7 @@ function Transactions() {
 
     setFilteredTransactions(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [transactions, searchTerm, filters, sortBy, sortOrder]);
+  }, [storeTransactions, searchTerm, filters, sortBy, sortOrder]);
 
   // Apply filters and search
   useEffect(() => {
@@ -206,21 +214,20 @@ function Transactions() {
       setLoading(true);
       setError(null);
       
-      // Ensure database is initialized with default data
-      await DatabaseInitService.initialize();
+      await refreshTransactions();
       
-      const [transactionsData, accountsData, categoriesData] = await Promise.all([
-        transactionManager.getTransactions(),
-        DatabaseService.getAccounts(),
-        DatabaseService.getCategories()
-      ]);
-      
-      setTransactions(transactionsData);
-      setAccounts(accountsData);
-      setCategories(categoriesData);
-      
-      const summaryData = await transactionManager.getTransactionSummary();
-      setSummary(summaryData);
+      const storeSummary = await getTransactionSummary();
+      // Convert store summary to component expected format
+      const summary: TransactionSummaryType = {
+        totalIncome: storeSummary.totalIncome,
+        totalExpenses: storeSummary.totalExpenses,
+        netAmount: storeSummary.netAmount,
+        transactionCount: storeSummary.transactionCount,
+        averageTransaction: storeSummary.averageTransaction,
+        categoryBreakdown: storeSummary.categoryBreakdown,
+        accountBreakdown: storeSummary.accountBreakdown
+      };
+      setSummary(summary);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to load data';
       setError(errorMsg);
@@ -236,7 +243,7 @@ function Transactions() {
 
   const handleDeleteTransaction = async (id: string) => {
     try {
-      await transactionManager.deleteTransaction(id);
+      await deleteTransaction(id);
       await loadData(); // Reload data after deletion
       toast({
         variant: 'success',
@@ -262,9 +269,9 @@ function Transactions() {
   const handleFormSubmit = async (transactionData: Partial<Transaction>) => {
     try {
       if (editingTransaction) {
-        await transactionManager.updateTransaction(editingTransaction.id, transactionData);
+        await updateTransaction(editingTransaction.id, transactionData);
       } else {
-        await transactionManager.createTransaction(transactionData as Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>);
+        await createTransaction(transactionData as Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>);
       }
       setShowForm(false);
       setEditingTransaction(null);
@@ -282,7 +289,7 @@ function Transactions() {
   // Bulk operations handlers
   const handleBulkDelete = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => transactionManager.deleteTransaction(id)));
+      await Promise.all(ids.map(id => deleteTransaction(id)));
       await loadData();
       setSelectedTransactions([]);
       toast({
@@ -303,7 +310,7 @@ function Transactions() {
 
   const handleBulkStatusUpdate = async (ids: string[], status: Transaction['status']) => {
     try {
-      await Promise.all(ids.map(id => transactionManager.updateTransactionStatus(id, status)));
+      await Promise.all(ids.map(id => updateTransaction(id, { status })));
       await loadData();
       setSelectedTransactions([]);
       toast({
@@ -324,7 +331,7 @@ function Transactions() {
 
   const handleBulkCategoryUpdate = async (ids: string[], categoryId: string) => {
     try {
-      await Promise.all(ids.map(id => transactionManager.updateTransaction(id, { category: categoryId })));
+      await Promise.all(ids.map(id => updateTransaction(id, { category: categoryId })));
       await loadData();
       setSelectedTransactions([]);
       toast({
@@ -373,7 +380,7 @@ function Transactions() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + itemsPerPage);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -400,7 +407,7 @@ function Transactions() {
             <Button 
               onClick={() => setShowForm(true)}
               className="w-full sm:w-auto font-mono text-sm sm:text-base"
-              disabled={loading}
+              disabled={isLoading}
             >
               💰 Add Transaction
             </Button>
@@ -408,7 +415,7 @@ function Transactions() {
               variant="outline"
               onClick={() => setShowExportImport(true)}
               className="w-full sm:w-auto font-mono text-sm sm:text-base"
-              disabled={loading}
+              disabled={isLoading}
             >
               📊 Export/Import
             </Button>
@@ -418,15 +425,15 @@ function Transactions() {
 
       <TransactionsSection>
         {/* Error Alert */}
-        {error && (
+        {storeError && (
           <Alert className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{storeError}</AlertDescription>
           </Alert>
         )}
 
         {/* Transaction Summary */}
-        {summary && <TransactionSummary summary={summary} loading={loading} />}
-         {!summary && loading && <TransactionSummary summary={{ totalIncome: 0, totalExpenses: 0, netAmount: 0, transactionCount: 0, averageTransaction: 0, categoryBreakdown: {}, accountBreakdown: {} }} loading={true} />}
+        {summary && <TransactionSummary summary={summary} loading={isLoading} />}
+         {!summary && isLoading && <TransactionSummary summary={{ totalIncome: 0, totalExpenses: 0, netAmount: 0, transactionCount: 0, averageTransaction: 0, categoryBreakdown: {}, accountBreakdown: {} }} loading={true} />}
       </TransactionsSection>
 
       <TransactionsSection>
@@ -439,8 +446,8 @@ function Transactions() {
           onExportSelected={handleExportSelected}
           onAddTransaction={() => setShowForm(true)}
           onExportImport={() => setShowExportImport(true)}
-          categories={categories}
-          loading={loading}
+          categories={storeCategories}
+          loading={isLoading}
         />
       </TransactionsSection>
 
@@ -448,7 +455,7 @@ function Transactions() {
         {/* Transaction Statistics */}
         <TransactionStatistics
           transactions={filteredTransactions}
-          loading={loading}
+          loading={isLoading}
         />
 
         {/* Transaction Filters */}
@@ -457,9 +464,9 @@ function Transactions() {
            onFiltersChange={setFilters}
            searchTerm={searchTerm}
            onSearchChange={setSearchTerm}
-           accounts={accounts}
-           categories={categories}
-           loading={loading}
+           accounts={storeAccounts}
+           categories={storeCategories}
+           loading={isLoading}
          />
       </TransactionsContentGrid>
 
@@ -467,7 +474,7 @@ function Transactions() {
         {/* Transaction History Table */}
         <TransactionHistoryTable
            transactions={filteredTransactions}
-           loading={loading}
+           loading={isLoading}
            onEdit={handleEditTransaction}
            onDelete={handleDeleteTransaction}
            onUpdateStatus={updateTransactionStatus}
@@ -494,11 +501,11 @@ function Transactions() {
             <div className="w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mt-2 sm:mt-0">
               <TransactionForm
                 transaction={editingTransaction}
-                accounts={accounts}
-                categories={categories}
+                accounts={storeAccounts}
+                categories={storeCategories}
                 onSubmit={handleFormSubmit}
                 onCancel={handleFormCancel}
-                loading={loading}
+                loading={isLoading}
               />
             </div>
           </div>

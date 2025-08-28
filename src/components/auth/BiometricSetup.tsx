@@ -6,6 +6,7 @@ import { ArrowLeft, Fingerprint, Shield, CheckCircle, AlertCircle, Info } from '
 import { cn } from '../../lib/utils';
 import type { AuthResult, BiometricCapabilities } from '../../types/auth';
 import { biometricAuthService } from '../../lib/auth/biometricAuthService';
+import { useAuthStore } from '../../stores/authStore';
 
 interface BiometricSetupProps {
   onResult: (result: AuthResult) => void;
@@ -19,6 +20,7 @@ type SetupStep = 'check' | 'consent' | 'setup' | 'complete';
  * Handles the setup of biometric authentication
  */
 export function BiometricSetup({ onResult, onBack }: BiometricSetupProps) {
+  const { setupAuth } = useAuthStore();
   const [step, setStep] = useState<SetupStep>('check');
   const [capabilities, setCapabilities] = useState<BiometricCapabilities | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +68,7 @@ export function BiometricSetup({ onResult, onBack }: BiometricSetupProps) {
       setError(null);
       setStep('setup');
       
-      const result = await biometricAuthService.setup();
+      const result = await setupAuth('biometric', { biometricConsent: true });
       
       if (result.success) {
         setStep('complete');

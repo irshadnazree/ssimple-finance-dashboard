@@ -9,7 +9,7 @@ import { Badge } from '../ui/badge';
 import { LoadingSpinner } from '../ui/loading-spinner';
 import type { Transaction, Account, Category, ValidationError } from '../../types/finance';
 import { ValidationUtils } from '../../lib/calculations/finance';
-import { transactionManager } from '../../lib/transactions/transactionManager';
+import { useTransactionStore } from '../../stores/transactionStore';
 import { useToast } from '../../lib/hooks/useToast';
 
 interface TransactionFormProps {
@@ -30,6 +30,7 @@ export function TransactionForm({
   loading = false,
 }: TransactionFormProps) {
   const { toast } = useToast();
+  const { suggestCategory } = useTransactionStore();
   const [formData, setFormData] = useState<Partial<Transaction>>({
     amount: 0,
     type: 'expense',
@@ -71,7 +72,7 @@ export function TransactionForm({
     const suggestCategory = async () => {
       if (formData.description && formData.description.length > 3 && !formData.category) {
         try {
-          const suggested = await transactionManager.suggestCategory(
+          const suggested = await suggestCategory(
             formData.description,
             formData.amount || 0
           );

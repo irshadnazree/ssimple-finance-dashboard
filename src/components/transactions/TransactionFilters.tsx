@@ -6,7 +6,7 @@ import { Label } from '../ui/label';
 import { Select } from '../ui/select';
 import { Badge } from '../ui/badge';
 import type { Transaction, Account, Category } from '../../types/finance';
-import type { TransactionFilters as TransactionFiltersType } from '../../lib/transactions/transactionManager';
+import type { TransactionFilters as TransactionFiltersType } from '../../stores/transactionStore';
 
 interface TransactionFiltersProps {
   filters: TransactionFiltersType;

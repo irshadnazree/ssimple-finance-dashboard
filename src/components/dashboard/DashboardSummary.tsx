@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { DatabaseService } from "../../lib/database/db";
-import { DatabaseInitService } from "../../lib/database/init";
-import { transactionManager } from "../../lib/transactions/transactionManager";
+import { useTransactionStore } from "../../stores/transactionStore";
+import { useUIStore } from "../../stores/uiStore";
 import type { Transaction } from "../../types/finance";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
@@ -22,13 +21,14 @@ interface SummaryData {
 export default function DashboardSummary({
 	className = "",
 }: DashboardSummaryProps) {
+	const { transactions, accounts, getTransactionSummary, refreshTransactions } = useTransactionStore();
+	const { loading: { isLoading }, setLoading } = useUIStore();
 	const [summaryData, setSummaryData] = useState<SummaryData>({
 		totalBalance: 0,
 		monthlyIncome: 0,
 		monthlyExpenses: 0,
 		recentTransactions: [],
 	});
-	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
@@ -37,41 +37,40 @@ export default function DashboardSummary({
 
 	const loadSummaryData = async () => {
 		try {
-			setLoading(true);
+			setLoading(true, 'Loading dashboard summary...');
 			setError(null);
 
-			// Ensure database is initialized with default data
-			await DatabaseInitService.initialize();
+			// Refresh transactions from store
+			await refreshTransactions();
 
 			// Get current month date range
 			const now = new Date();
 			const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 			const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-			// Load accounts and calculate total balance
-			const accounts = await DatabaseService.getAccounts();
+			// Calculate total balance from accounts
 			const totalBalance = accounts
 				.filter((account) => account.isActive)
 				.reduce((sum, account) => sum + account.balance, 0);
 
-			// Load transactions for current month
-			const transactions = await transactionManager.getTransactions({
-				startDate: startOfMonth,
-				endDate: endOfMonth,
-			});
+			// Filter transactions for current month
+			const monthlyTransactions = transactions.filter(t => 
+				t.date >= startOfMonth && t.date <= endOfMonth
+			);
 
 			// Calculate monthly income and expenses
-			const monthlyIncome = transactions
+			const monthlyIncome = monthlyTransactions
 				.filter((t) => t.type === "income")
 				.reduce((sum, t) => sum + t.amount, 0);
 
-			const monthlyExpenses = transactions
+			const monthlyExpenses = monthlyTransactions
 				.filter((t) => t.type === "expense")
 				.reduce((sum, t) => sum + t.amount, 0);
 
 			// Get recent transactions (last 5)
-			const allTransactions = await transactionManager.getTransactions({});
-			const recentTransactions = allTransactions.slice(0, 5);
+			const recentTransactions = transactions
+				.sort((a, b) => b.date.getTime() - a.date.getTime())
+				.slice(0, 5);
 
 			setSummaryData({
 				totalBalance,
@@ -102,7 +101,7 @@ export default function DashboardSummary({
 		}).format(new Date(date));
 	};
 
-	if (loading) {
+	if (isLoading) {
 		return (
 			<Card className={className}>
 				<CardContent className="p-3 sm:p-6">

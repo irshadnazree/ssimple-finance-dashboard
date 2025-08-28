@@ -7,7 +7,7 @@ import {
 	Lock,
 } from "lucide-react";
 import { useState } from "react";
-import { pinAuthService } from "../../lib/auth/pinAuthService";
+import { useAuthStore } from "../../stores/authStore";
 import { cn } from "../../lib/utils";
 import type { AuthResult } from "../../types/auth";
 import { Alert, AlertDescription } from "../ui/alert";
@@ -31,6 +31,7 @@ interface PinSetupProps {
  * Handles the creation of a new 6-digit PIN for authentication
  */
 export function PinSetup({ onResult, onBack }: PinSetupProps) {
+	const { setupAuth } = useAuthStore();
 	const [pin, setPin] = useState("");
 	const [confirmPin, setConfirmPin] = useState("");
 	const [showPin, setShowPin] = useState(false);
@@ -57,10 +58,12 @@ export function PinSetup({ onResult, onBack }: PinSetupProps) {
 			return;
 		}
 
-		// Validate PIN format
-		const validation = pinAuthService.validatePinFormat(pin);
-		if (!validation.isValid) {
-			setError(validation.error || "Invalid PIN format");
+		// Validate PIN format - ensure it's not all same digits or sequential
+		const isAllSame = pin.split('').every(digit => digit === pin[0]);
+		const isSequential = pin === '123456' || pin === '654321' || pin === '000000';
+		
+		if (isAllSame || isSequential) {
+			setError("Please choose a more secure PIN (avoid repeated or sequential digits)");
 			return;
 		}
 
@@ -84,7 +87,7 @@ export function PinSetup({ onResult, onBack }: PinSetupProps) {
 		setError(null);
 
 		try {
-			const result = await pinAuthService.setup(pin);
+			const result = await setupAuth('pin', { pin });
 			onResult(result);
 		} catch (err) {
 			console.error("PIN setup error:", err);
@@ -182,17 +185,17 @@ export function PinSetup({ onResult, onBack }: PinSetupProps) {
 
 					{/* PIN Strength Indicator */}
 					<div className="flex justify-center space-x-2">
-						{Array.from({ length: 6 }, (_, i) => (
-							<div
-								key={`pin-dot-${i}`}
-								className={cn(
-									"w-3 h-3 rounded-full border-2 transition-all duration-200",
-									i < currentPin.length
-										? "bg-primary border-primary"
-										: "border-muted-foreground/30",
-								)}
-							/>
-						))}
+						{[0, 1, 2, 3, 4, 5].map((dotIndex) => (
+				<div
+					key={`pin-dot-${dotIndex}`}
+							className={cn(
+								"w-3 h-3 rounded-full border-2 transition-all duration-200",
+								dotIndex < currentPin.length
+									? "bg-primary border-primary"
+									: "border-muted-foreground/30",
+							)}
+						/>
+					))}
 					</div>
 				</div>
 

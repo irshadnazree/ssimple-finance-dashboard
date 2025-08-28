@@ -3,7 +3,7 @@ import { Navigate, useLocation } from '@tanstack/react-router';
 import { Card, CardContent } from '../ui/card';
 import { Loader2 } from 'lucide-react';
 import type { AuthState, AuthSession } from '../../types/auth';
-import { authService } from '../../lib/auth/authService';
+import { useAuthStore } from '../../stores/authStore';
 import { AuthScreen } from './AuthScreen';
 
 interface AuthGuardProps {
@@ -21,7 +21,7 @@ export function AuthGuard({
   fallback, 
   requireAuth = true 
 }: AuthGuardProps) {
-  const [authState, setAuthState] = useState<AuthState | null>(null);
+  const { authState, getAuthState, addEventListener, removeEventListener } = useAuthStore();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAuthScreen, setShowAuthScreen] = useState(false);
@@ -31,29 +31,36 @@ export function AuthGuard({
     checkAuthStatus();
     
     // Listen for auth state changes
-    authService.addEventListener('login', () => {
+    addEventListener('login', () => {
       checkAuthStatus();
     });
     
-    authService.addEventListener('logout', () => {
-      setAuthState(null);
+    addEventListener('logout', () => {
       setSession(null);
       if (requireAuth) {
         setShowAuthScreen(true);
       }
     });
 
-    // Note: authService.addEventListener doesn't return an unsubscribe function
-    // Event listeners are managed internally by the service
-  }, [requireAuth]);
+    return () => {
+      removeEventListener('login', () => {
+        checkAuthStatus();
+      });
+      removeEventListener('logout', () => {
+        setSession(null);
+        if (requireAuth) {
+          setShowAuthScreen(true);
+        }
+      });
+    };
+  }, [requireAuth, addEventListener, removeEventListener]);
 
   const checkAuthStatus = async () => {
     try {
       setIsLoading(true);
       
       // Get current auth state
-      const currentState = await authService.getAuthState();
-      setAuthState(currentState);
+      const currentState = getAuthState();
       
       // Check if there's an active session from auth state
       const currentSession = currentState.session;
@@ -163,6 +170,7 @@ export function withAuthGuard<P extends object>(
  * Hook for checking authentication status
  */
 export function useAuthGuard() {
+  const { getAuthState, addEventListener, removeEventListener } = useAuthStore();
   const [authState, setAuthState] = useState<AuthState | null>(null);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -170,7 +178,7 @@ export function useAuthGuard() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const state = await authService.getAuthState();
+        const state = await getAuthState();
         const currentSession = state.session;
         setAuthState(state);
         setSession(currentSession);
@@ -183,19 +191,27 @@ export function useAuthGuard() {
 
     checkAuth();
 
-    authService.addEventListener('login', () => {
+    addEventListener('login', () => {
       checkAuth();
     });
     
-    authService.addEventListener('logout', () => {
+    addEventListener('logout', () => {
       setAuthState(null);
       setSession(null);
       setIsLoading(false);
     });
 
-    // Note: authService.addEventListener doesn't return an unsubscribe function
-    // Event listeners are managed internally by the service
-  }, []);
+    return () => {
+      removeEventListener('login', () => {
+        checkAuth();
+      });
+      removeEventListener('logout', () => {
+        setAuthState(null);
+        setSession(null);
+        setIsLoading(false);
+      });
+    };
+  }, [getAuthState, addEventListener, removeEventListener]);
 
   return {
       authState,

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { LoadingCard } from '../ui/loading-spinner';
-import type { TransactionSummary as TransactionSummaryType } from '../../lib/transactions/transactionManager';
+import type { TransactionSummary as TransactionSummaryType } from '../../stores/transactionStore';
 
 interface TransactionSummaryProps {
   summary: TransactionSummaryType;

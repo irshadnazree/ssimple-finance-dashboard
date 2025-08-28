@@ -6,9 +6,9 @@ import { QuickActions } from "../components/dashboard/QuickActions";
 import { FinancialHealthIndicators } from "../components/dashboard/FinancialHealthIndicators";
 import { RecentActivityFeed } from "../components/dashboard/RecentActivityFeed";
 import { Button } from "../components/ui/button";
-import { DatabaseService } from "../lib/database/db";
-import { DatabaseInitService } from "../lib/database/init";
 import { DashboardLayout, DashboardSection, DashboardGrid } from "../components/layout";
+import { useTransactionStore } from "../stores/transactionStore";
+import { useUIStore } from "../stores/uiStore";
 import type { Transaction } from "../types/finance";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
@@ -17,8 +17,15 @@ function Dashboard() {
 	const [chartTimeframe, setChartTimeframe] = useState<
 		"week" | "month" | "year"
 	>("month");
-	const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
-	const [showAddTransaction, setShowAddTransaction] = useState(false);
+	
+	// Zustand stores
+	const { transactions, refreshTransactions } = useTransactionStore();
+	const { openTransactionModal } = useUIStore();
+	
+	// Get recent transactions from store
+	const recentTransactions = transactions
+		.sort((a, b) => b.date.getTime() - a.date.getTime())
+		.slice(0, 5);
 
 	// Mock financial health data - in a real app, this would come from calculations
 	const healthData = {
@@ -31,27 +38,11 @@ function Dashboard() {
 	};
 
 	useEffect(() => {
-		loadRecentTransactions();
-	}, []);
-
-	const loadRecentTransactions = async () => {
-		try {
-			await DatabaseInitService.initialize();
-			const transactions = await DatabaseService.getTransactions();
-			// Get the 5 most recent transactions
-			const recent = transactions
-				.sort((a, b) => b.date.getTime() - a.date.getTime())
-				.slice(0, 5);
-			setRecentTransactions(recent);
-		} catch (error) {
-			console.error('Failed to load recent transactions:', error);
-		}
-	};
+		refreshTransactions();
+	}, [refreshTransactions]);
 
 	const handleAddTransaction = () => {
-		setShowAddTransaction(true);
-		// In a real app, this would open a transaction form modal or navigate to transactions page
-		console.log('Add transaction clicked');
+		openTransactionModal();
 	};
 
 	return (

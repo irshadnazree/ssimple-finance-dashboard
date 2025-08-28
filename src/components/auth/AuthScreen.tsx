@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { Fingerprint, Lock, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { AuthMethod, AuthResult, BiometricCapabilities, AuthState } from '../../types/auth';
-import { authService } from '../../lib/auth/authService';
+import { useAuthStore } from '../../stores/authStore';
 import { biometricAuthService } from '../../lib/auth/biometricAuthService';
 import { PinSetup } from './PinSetup';
 import { PinLogin } from './PinLogin';
@@ -25,12 +25,12 @@ type AuthFlow = 'selection' | 'pin-setup' | 'pin-login' | 'biometric-setup' | 'b
  * Handles the authentication flow for both PIN and biometric methods
  */
 export function AuthScreen({ onAuthSuccess, className }: AuthScreenProps) {
+  const { authState, initialize, getAuthState } = useAuthStore();
   const [currentFlow, setCurrentFlow] = useState<AuthFlow>('selection');
   const [selectedMethod, setSelectedMethod] = useState<AuthMethod | null>(null);
   const [biometricCapabilities, setBiometricCapabilities] = useState<BiometricCapabilities | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [authState, setAuthState] = useState<AuthState | null>(null);
 
   useEffect(() => {
     initializeAuth();
@@ -42,11 +42,10 @@ export function AuthScreen({ onAuthSuccess, className }: AuthScreenProps) {
       setError(null);
 
       // Initialize authentication services
-      await authService.initialize();
+      await initialize();
       
       // Get current auth state
-      const state = await authService.getAuthState();
-      setAuthState(state);
+      const state = getAuthState();
 
       // Check biometric capabilities
       const capabilities = await biometricAuthService.getCapabilities();
