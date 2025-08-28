@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Select } from '../ui/select';
-import { Calendar, ChevronDown } from 'lucide-react';
-import { format } from 'date-fns';
-import type { DateRange, ReportPeriod } from '../../types/finance';
-import { reportsService } from '../../lib/reports/reportsService';
+import { format } from "date-fns";
+import { Calendar, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { reportsService } from "../../lib/reports/reportsService";
+import type { DateRange, ReportPeriod } from "../../types/finance";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select } from "../ui/select";
 
 interface DateRangeSelectorProps {
 	selectedRange: DateRange;
@@ -15,19 +15,27 @@ interface DateRangeSelectorProps {
 	className?: string;
 }
 
-export function DateRangeSelector({ selectedRange, onRangeChange, className }: DateRangeSelectorProps) {
+export function DateRangeSelector({
+	selectedRange,
+	onRangeChange,
+	className,
+}: DateRangeSelectorProps) {
 	const [isCustomMode, setIsCustomMode] = useState(false);
 	const [customStartDate, setCustomStartDate] = useState(
-		format(selectedRange.startDate, 'yyyy-MM-dd')
+		format(selectedRange.startDate, "yyyy-MM-dd"),
 	);
 	const [customEndDate, setCustomEndDate] = useState(
-		format(selectedRange.endDate, 'yyyy-MM-dd')
+		format(selectedRange.endDate, "yyyy-MM-dd"),
 	);
 	const [showDropdown, setShowDropdown] = useState(false);
 
 	const predefinedRanges = reportsService.getPredefinedDateRanges();
 
-	const handlePresetSelect = (preset: { label: string; value: string; range: DateRange }) => {
+	const handlePresetSelect = (preset: {
+		label: string;
+		value: string;
+		range: DateRange;
+	}) => {
 		onRangeChange(preset.range);
 		setIsCustomMode(false);
 		setShowDropdown(false);
@@ -36,12 +44,12 @@ export function DateRangeSelector({ selectedRange, onRangeChange, className }: D
 	const handleCustomRangeApply = () => {
 		const startDate = new Date(customStartDate);
 		const endDate = new Date(customEndDate);
-		
+
 		if (startDate <= endDate) {
 			onRangeChange({
 				startDate,
 				endDate,
-				label: `${format(startDate, 'MMM dd')} - ${format(endDate, 'MMM dd, yyyy')}`
+				label: `${format(startDate, "MMM dd")} - ${format(endDate, "MMM dd, yyyy")}`,
 			});
 			setShowDropdown(false);
 		}
@@ -50,8 +58,8 @@ export function DateRangeSelector({ selectedRange, onRangeChange, className }: D
 	const toggleCustomMode = () => {
 		setIsCustomMode(!isCustomMode);
 		if (!isCustomMode) {
-			setCustomStartDate(format(selectedRange.startDate, 'yyyy-MM-dd'));
-			setCustomEndDate(format(selectedRange.endDate, 'yyyy-MM-dd'));
+			setCustomStartDate(format(selectedRange.startDate, "yyyy-MM-dd"));
+			setCustomEndDate(format(selectedRange.endDate, "yyyy-MM-dd"));
 		}
 	};
 
@@ -65,14 +73,15 @@ export function DateRangeSelector({ selectedRange, onRangeChange, className }: D
 				<div className="flex items-center gap-2">
 					<Calendar className="h-4 w-4" />
 					<span>
-						{selectedRange.label || 
-							`${format(selectedRange.startDate, 'MMM dd')} - ${format(selectedRange.endDate, 'MMM dd, yyyy')}`
-						}
+						{selectedRange.label ||
+							`${format(selectedRange.startDate, "MMM dd")} - ${format(selectedRange.endDate, "MMM dd, yyyy")}`}
 					</span>
 				</div>
-				<ChevronDown className={`h-4 w-4 transition-transform ${
-					showDropdown ? 'rotate-180' : ''
-				}`} />
+				<ChevronDown
+					className={`h-4 w-4 transition-transform ${
+						showDropdown ? "rotate-180" : ""
+					}`}
+				/>
 			</Button>
 
 			{showDropdown && (
@@ -136,7 +145,11 @@ export function DateRangeSelector({ selectedRange, onRangeChange, className }: D
 										size="sm"
 										onClick={handleCustomRangeApply}
 										className="flex-1 font-mono text-xs"
-										disabled={!customStartDate || !customEndDate || new Date(customStartDate) > new Date(customEndDate)}
+										disabled={
+											!customStartDate ||
+											!customEndDate ||
+											new Date(customStartDate) > new Date(customEndDate)
+										}
 									>
 										Apply Range
 									</Button>
@@ -152,7 +165,7 @@ export function DateRangeSelector({ selectedRange, onRangeChange, className }: D
 								onClick={toggleCustomMode}
 								className="w-full font-mono text-xs"
 							>
-								{isCustomMode ? '← Back to Presets' : 'Custom Range →'}
+								{isCustomMode ? "← Back to Presets" : "Custom Range →"}
 							</Button>
 						</div>
 					</CardContent>
@@ -163,7 +176,11 @@ export function DateRangeSelector({ selectedRange, onRangeChange, className }: D
 }
 
 // Quick date range buttons component
-export function QuickDateRanges({ onRangeSelect, selectedRange, className }: {
+export function QuickDateRanges({
+	onRangeSelect,
+	selectedRange,
+	className,
+}: {
 	onRangeSelect: (range: DateRange) => void;
 	selectedRange: DateRange;
 	className?: string;
@@ -177,7 +194,7 @@ export function QuickDateRanges({ onRangeSelect, selectedRange, className }: {
 				return (
 					<Button
 						key={preset.value}
-						variant={isSelected ? 'default' : 'outline'}
+						variant={isSelected ? "default" : "outline"}
 						size="sm"
 						onClick={() => onRangeSelect(preset.range)}
 						className="font-mono text-xs"
@@ -191,17 +208,21 @@ export function QuickDateRanges({ onRangeSelect, selectedRange, className }: {
 }
 
 // Date range display component
-export function DateRangeDisplay({ range, className }: {
+export function DateRangeDisplay({
+	range,
+	className,
+}: {
 	range: DateRange;
 	className?: string;
 }) {
 	return (
-		<div className={`flex items-center gap-2 text-sm text-muted-foreground font-mono ${className}`}>
+		<div
+			className={`flex items-center gap-2 text-sm text-muted-foreground font-mono ${className}`}
+		>
 			<Calendar className="h-4 w-4" />
 			<span>
-				{range.label || 
-					`${format(range.startDate, 'MMM dd, yyyy')} - ${format(range.endDate, 'MMM dd, yyyy')}`
-				}
+				{range.label ||
+					`${format(range.startDate, "MMM dd, yyyy")} - ${format(range.endDate, "MMM dd, yyyy")}`}
 			</span>
 		</div>
 	);

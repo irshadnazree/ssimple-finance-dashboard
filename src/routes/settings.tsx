@@ -1,30 +1,35 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
-import { SettingsNavigation } from '../components/settings/SettingsNavigation';
-import { ProfileSettings } from '../components/settings/ProfileSettings';
-import { SecuritySettings } from '../components/settings/SecuritySettings';
-import { NotificationSettings } from '../components/settings/NotificationSettings';
-import GoogleDriveSettings from '../components/settings/GoogleDriveSettings';
-import { SettingsLayout, SettingsSection, SettingsGrid, SettingsContent } from '../components/layout';
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import {
+	SettingsContent,
+	SettingsGrid,
+	SettingsLayout,
+	SettingsSection,
+} from "../components/layout";
+import GoogleDriveSettings from "../components/settings/GoogleDriveSettings";
+import { NotificationSettings } from "../components/settings/NotificationSettings";
+import { ProfileSettings } from "../components/settings/ProfileSettings";
+import { SecuritySettings } from "../components/settings/SecuritySettings";
+import { SettingsNavigation } from "../components/settings/SettingsNavigation";
 
-export const Route = createFileRoute('/settings')({
+export const Route = createFileRoute("/settings")({
 	component: Settings,
 });
 
 function Settings() {
-	const [activeSection, setActiveSection] = useState('profile');
+	const [activeSection, setActiveSection] = useState("profile");
 
 	const renderSettingsContent = () => {
 		switch (activeSection) {
-			case 'profile':
+			case "profile":
 				return <ProfileSettings />;
-			case 'security':
+			case "security":
 				return <SecuritySettings />;
-			case 'notifications':
+			case "notifications":
 				return <NotificationSettings />;
-			case 'data':
+			case "data":
 				return <GoogleDriveSettings />;
-			case 'appearance':
+			case "appearance":
 				return (
 					<div className="space-y-6">
 						<div>
@@ -40,7 +45,7 @@ function Settings() {
 						</div>
 					</div>
 				);
-			case 'export':
+			case "export":
 				return (
 					<div className="space-y-6">
 						<div>
@@ -69,19 +74,15 @@ function Settings() {
 					Manage your application preferences and configurations.
 				</p>
 			</SettingsSection>
-			
+
 			<SettingsGrid
 				navigation={
-					<SettingsNavigation 
+					<SettingsNavigation
 						activeSection={activeSection}
 						onSectionChange={setActiveSection}
 					/>
 				}
-				content={
-					<SettingsContent>
-						{renderSettingsContent()}
-					</SettingsContent>
-				}
+				content={<SettingsContent>{renderSettingsContent()}</SettingsContent>}
 			/>
 		</SettingsLayout>
 	);

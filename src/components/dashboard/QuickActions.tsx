@@ -1,5 +1,12 @@
-import { Plus, ArrowUpDown, FileText, Settings, TrendingUp, Wallet } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import {
+	ArrowUpDown,
+	FileText,
+	Plus,
+	Settings,
+	TrendingUp,
+	Wallet,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
@@ -8,7 +15,10 @@ interface QuickActionsProps {
 	onAddTransaction?: () => void;
 }
 
-export function QuickActions({ className = "", onAddTransaction }: QuickActionsProps) {
+export function QuickActions({
+	className = "",
+	onAddTransaction,
+}: QuickActionsProps) {
 	const quickActions = [
 		{
 			id: "add-transaction",
@@ -16,7 +26,7 @@ export function QuickActions({ className = "", onAddTransaction }: QuickActionsP
 			icon: Plus,
 			variant: "default" as const,
 			onClick: onAddTransaction,
-			description: "Record a new transaction"
+			description: "Record a new transaction",
 		},
 		{
 			id: "transfer",
@@ -24,7 +34,7 @@ export function QuickActions({ className = "", onAddTransaction }: QuickActionsP
 			icon: ArrowUpDown,
 			variant: "outline" as const,
 			href: "/transactions?action=transfer",
-			description: "Move money between accounts"
+			description: "Move money between accounts",
 		},
 		{
 			id: "reports",
@@ -32,7 +42,7 @@ export function QuickActions({ className = "", onAddTransaction }: QuickActionsP
 			icon: FileText,
 			variant: "outline" as const,
 			href: "/reports",
-			description: "Analyze your finances"
+			description: "Analyze your finances",
 		},
 		{
 			id: "budget",
@@ -40,8 +50,8 @@ export function QuickActions({ className = "", onAddTransaction }: QuickActionsP
 			icon: TrendingUp,
 			variant: "outline" as const,
 			href: "/reports?type=budget",
-			description: "Track spending goals"
-		}
+			description: "Track spending goals",
+		},
 	];
 
 	return (
@@ -65,7 +75,7 @@ export function QuickActions({ className = "", onAddTransaction }: QuickActionsP
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 					{quickActions.map((action) => {
 						const Icon = action.icon;
-						
+
 						if (action.onClick) {
 							return (
 								<Button
@@ -85,30 +95,30 @@ export function QuickActions({ className = "", onAddTransaction }: QuickActionsP
 								</Button>
 							);
 						}
-						
+
 						if (action.href) {
-						return (
-							<Button
-								key={action.id}
-								variant={action.variant}
-								size="lg"
-								asChild
-								className="h-auto p-4 flex flex-col items-start gap-2 text-left"
-							>
-								<Link to={action.href}>
-									<div className="flex items-center gap-2 w-full">
-										<Icon className="h-4 w-4" />
-										<span className="font-medium">{action.label}</span>
-									</div>
-									<span className="text-xs text-muted-foreground">
-										{action.description}
-									</span>
-								</Link>
-							</Button>
-						);
-					}
-					
-					return null;
+							return (
+								<Button
+									key={action.id}
+									variant={action.variant}
+									size="lg"
+									asChild
+									className="h-auto p-4 flex flex-col items-start gap-2 text-left"
+								>
+									<Link to={action.href}>
+										<div className="flex items-center gap-2 w-full">
+											<Icon className="h-4 w-4" />
+											<span className="font-medium">{action.label}</span>
+										</div>
+										<span className="text-xs text-muted-foreground">
+											{action.description}
+										</span>
+									</Link>
+								</Button>
+							);
+						}
+
+						return null;
 					})}
 				</div>
 			</CardContent>

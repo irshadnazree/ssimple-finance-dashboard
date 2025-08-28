@@ -1,10 +1,10 @@
 import { Bell, Mail, Smartphone, Volume2 } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "../../lib/hooks/useToast";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
-import { useToast } from "../../lib/hooks/useToast";
 
 interface NotificationData {
 	emailNotifications: {
@@ -53,8 +53,11 @@ export function NotificationSettings() {
 
 	const { toast } = useToast();
 
-	const handleEmailNotificationChange = (key: keyof NotificationData['emailNotifications'], value: boolean) => {
-		setNotificationData(prev => ({
+	const handleEmailNotificationChange = (
+		key: keyof NotificationData["emailNotifications"],
+		value: boolean,
+	) => {
+		setNotificationData((prev) => ({
 			...prev,
 			emailNotifications: {
 				...prev.emailNotifications,
@@ -67,8 +70,11 @@ export function NotificationSettings() {
 		});
 	};
 
-	const handlePushNotificationChange = (key: keyof NotificationData['pushNotifications'], value: boolean) => {
-		setNotificationData(prev => ({
+	const handlePushNotificationChange = (
+		key: keyof NotificationData["pushNotifications"],
+		value: boolean,
+	) => {
+		setNotificationData((prev) => ({
 			...prev,
 			pushNotifications: {
 				...prev.pushNotifications,
@@ -81,8 +87,11 @@ export function NotificationSettings() {
 		});
 	};
 
-	const handleQuietHoursChange = (field: 'enabled' | 'startTime' | 'endTime', value: boolean | string) => {
-		setNotificationData(prev => ({
+	const handleQuietHoursChange = (
+		field: "enabled" | "startTime" | "endTime",
+		value: boolean | string,
+	) => {
+		setNotificationData((prev) => ({
 			...prev,
 			quietHours: {
 				...prev.quietHours,
@@ -129,7 +138,9 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.emailNotifications.transactionAlerts}
-							onCheckedChange={(checked) => handleEmailNotificationChange('transactionAlerts', checked)}
+							onCheckedChange={(checked) =>
+								handleEmailNotificationChange("transactionAlerts", checked)
+							}
 						/>
 					</div>
 
@@ -142,7 +153,9 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.emailNotifications.budgetWarnings}
-							onCheckedChange={(checked) => handleEmailNotificationChange('budgetWarnings', checked)}
+							onCheckedChange={(checked) =>
+								handleEmailNotificationChange("budgetWarnings", checked)
+							}
 						/>
 					</div>
 
@@ -155,7 +168,9 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.emailNotifications.weeklyReports}
-							onCheckedChange={(checked) => handleEmailNotificationChange('weeklyReports', checked)}
+							onCheckedChange={(checked) =>
+								handleEmailNotificationChange("weeklyReports", checked)
+							}
 						/>
 					</div>
 
@@ -168,7 +183,9 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.emailNotifications.monthlyStatements}
-							onCheckedChange={(checked) => handleEmailNotificationChange('monthlyStatements', checked)}
+							onCheckedChange={(checked) =>
+								handleEmailNotificationChange("monthlyStatements", checked)
+							}
 						/>
 					</div>
 
@@ -181,7 +198,9 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.emailNotifications.securityAlerts}
-							onCheckedChange={(checked) => handleEmailNotificationChange('securityAlerts', checked)}
+							onCheckedChange={(checked) =>
+								handleEmailNotificationChange("securityAlerts", checked)
+							}
 						/>
 					</div>
 				</CardContent>
@@ -205,7 +224,9 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.pushNotifications.transactionAlerts}
-							onCheckedChange={(checked) => handlePushNotificationChange('transactionAlerts', checked)}
+							onCheckedChange={(checked) =>
+								handlePushNotificationChange("transactionAlerts", checked)
+							}
 						/>
 					</div>
 
@@ -218,7 +239,9 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.pushNotifications.budgetWarnings}
-							onCheckedChange={(checked) => handlePushNotificationChange('budgetWarnings', checked)}
+							onCheckedChange={(checked) =>
+								handlePushNotificationChange("budgetWarnings", checked)
+							}
 						/>
 					</div>
 
@@ -231,7 +254,9 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.pushNotifications.goalReminders}
-							onCheckedChange={(checked) => handlePushNotificationChange('goalReminders', checked)}
+							onCheckedChange={(checked) =>
+								handlePushNotificationChange("goalReminders", checked)
+							}
 						/>
 					</div>
 
@@ -244,7 +269,9 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.pushNotifications.billReminders}
-							onCheckedChange={(checked) => handlePushNotificationChange('billReminders', checked)}
+							onCheckedChange={(checked) =>
+								handlePushNotificationChange("billReminders", checked)
+							}
 						/>
 					</div>
 				</CardContent>
@@ -268,7 +295,12 @@ export function NotificationSettings() {
 						</div>
 						<Switch
 							checked={notificationData.soundEnabled}
-							onCheckedChange={(checked) => setNotificationData(prev => ({ ...prev, soundEnabled: checked }))}
+							onCheckedChange={(checked) =>
+								setNotificationData((prev) => ({
+									...prev,
+									soundEnabled: checked,
+								}))
+							}
 						/>
 					</div>
 
@@ -282,7 +314,9 @@ export function NotificationSettings() {
 							</div>
 							<Switch
 								checked={notificationData.quietHours.enabled}
-								onCheckedChange={(checked) => handleQuietHoursChange('enabled', checked)}
+								onCheckedChange={(checked) =>
+									handleQuietHoursChange("enabled", checked)
+								}
 							/>
 						</div>
 
@@ -294,7 +328,9 @@ export function NotificationSettings() {
 										id="start-time"
 										type="time"
 										value={notificationData.quietHours.startTime}
-										onChange={(e) => handleQuietHoursChange('startTime', e.target.value)}
+										onChange={(e) =>
+											handleQuietHoursChange("startTime", e.target.value)
+										}
 										className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
 									/>
 								</div>
@@ -304,7 +340,9 @@ export function NotificationSettings() {
 										id="end-time"
 										type="time"
 										value={notificationData.quietHours.endTime}
-										onChange={(e) => handleQuietHoursChange('endTime', e.target.value)}
+										onChange={(e) =>
+											handleQuietHoursChange("endTime", e.target.value)
+										}
 										className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
 									/>
 								</div>
@@ -313,7 +351,11 @@ export function NotificationSettings() {
 					</div>
 
 					<div className="pt-4 border-t">
-						<Button onClick={testNotification} variant="outline" className="w-full">
+						<Button
+							onClick={testNotification}
+							variant="outline"
+							className="w-full"
+						>
 							Test Notification
 						</Button>
 					</div>

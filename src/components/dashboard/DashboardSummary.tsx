@@ -21,8 +21,12 @@ interface SummaryData {
 export default function DashboardSummary({
 	className = "",
 }: DashboardSummaryProps) {
-	const { transactions, accounts, getTransactionSummary, refreshTransactions } = useTransactionStore();
-	const { loading: { isLoading }, setLoading } = useUIStore();
+	const { transactions, accounts, getTransactionSummary, refreshTransactions } =
+		useTransactionStore();
+	const {
+		loading: { isLoading },
+		setLoading,
+	} = useUIStore();
 	const [summaryData, setSummaryData] = useState<SummaryData>({
 		totalBalance: 0,
 		monthlyIncome: 0,
@@ -37,7 +41,7 @@ export default function DashboardSummary({
 
 	const loadSummaryData = async () => {
 		try {
-			setLoading(true, 'Loading dashboard summary...');
+			setLoading(true, "Loading dashboard summary...");
 			setError(null);
 
 			// Refresh transactions from store
@@ -54,8 +58,8 @@ export default function DashboardSummary({
 				.reduce((sum, account) => sum + account.balance, 0);
 
 			// Filter transactions for current month
-			const monthlyTransactions = transactions.filter(t => 
-				t.date >= startOfMonth && t.date <= endOfMonth
+			const monthlyTransactions = transactions.filter(
+				(t) => t.date >= startOfMonth && t.date <= endOfMonth,
 			);
 
 			// Calculate monthly income and expenses
@@ -185,11 +189,7 @@ export default function DashboardSummary({
 						</div>
 					</div>
 				</div>
-
-
 			</div>
-
-
 
 			{/* Recent Transactions */}
 			<div className="space-y-3 sm:space-y-4">

@@ -1,5 +1,10 @@
-import Dexie from 'dexie';
-import type { Transaction, Account, Category, UserPreferences } from '../../types/finance';
+import Dexie from "dexie";
+import type {
+	Account,
+	Category,
+	Transaction,
+	UserPreferences,
+} from "../../types/finance";
 
 /**
  * Main database service for the finance dashboard
@@ -11,14 +16,15 @@ export class FinanceDashboard extends Dexie {
 	preferences!: Dexie.Table<UserPreferences, string>;
 
 	constructor() {
-		super('FinanceDashboard');
-		
+		super("FinanceDashboard");
+
 		// Define schemas
 		this.version(1).stores({
-			transactions: '++id, amount, category, date, type, account, currency, myr, incomeExpense, note, account2, createdAt, updatedAt',
-			accounts: '++id, name, type, balance, currency, isActive',
-			categories: '++id, name, type, isDefault',
-			preferences: '++id'
+			transactions:
+				"++id, amount, category, date, type, account, currency, myr, incomeExpense, note, account2, createdAt, updatedAt",
+			accounts: "++id, name, type, balance, currency, isActive",
+			categories: "++id, name, type, isDefault",
+			preferences: "++id",
 		});
 	}
 }
@@ -41,12 +47,14 @@ export const DatabaseService = {
 			createdAt: now,
 			updatedAt: now,
 			// Ensure required fields have defaults
-			currency: transaction.currency || 'MYR',
+			currency: transaction.currency || "MYR",
 			myr: transaction.myr || transaction.amount,
-			incomeExpense: transaction.incomeExpense || (transaction.type === 'income' ? 'Income' : 'Expense'),
-			account2: transaction.account2 || undefined
+			incomeExpense:
+				transaction.incomeExpense ||
+				(transaction.type === "income" ? "Income" : "Expense"),
+			account2: transaction.account2 || undefined,
 		};
-		
+
 		await db.transactions.add(newTransaction);
 		return newTransaction;
 	},
@@ -61,11 +69,11 @@ export const DatabaseService = {
 
 	async updateTransaction(
 		id: string,
-		updates: Partial<Omit<Transaction, "id" | "createdAt">>
+		updates: Partial<Omit<Transaction, "id" | "createdAt">>,
 	): Promise<Transaction> {
 		const updatedTransaction = {
 			...updates,
-			updatedAt: new Date()
+			updatedAt: new Date(),
 		};
 		await db.transactions.update(id, updatedTransaction);
 		const result = await db.transactions.get(id);
@@ -79,20 +87,18 @@ export const DatabaseService = {
 		await db.transactions.delete(id);
 	},
 
-
-
 	// Account operations
 	async createAccount(
-		account: Omit<Account, "id" | "createdAt" | "updatedAt">
+		account: Omit<Account, "id" | "createdAt" | "updatedAt">,
 	): Promise<Account> {
 		const now = new Date();
 		const newAccount: Account = {
 			...account,
 			id: crypto.randomUUID(),
 			createdAt: now,
-			updatedAt: now
+			updatedAt: now,
 		};
-		
+
 		await db.accounts.add(newAccount);
 		return newAccount;
 	},
@@ -107,11 +113,11 @@ export const DatabaseService = {
 
 	async updateAccount(
 		id: string,
-		updates: Partial<Omit<Account, "id" | "createdAt">>
+		updates: Partial<Omit<Account, "id" | "createdAt">>,
 	): Promise<Account> {
 		const updatedAccount = {
 			...updates,
-			updatedAt: new Date()
+			updatedAt: new Date(),
 		};
 		await db.accounts.update(id, updatedAccount);
 		const result = await db.accounts.get(id);
@@ -131,14 +137,14 @@ export const DatabaseService = {
 	},
 
 	async createCategory(
-		category: Omit<Category, "id" | "createdAt">
+		category: Omit<Category, "id" | "createdAt">,
 	): Promise<Category> {
 		const newCategory: Category = {
 			...category,
 			id: crypto.randomUUID(),
-			createdAt: new Date()
+			createdAt: new Date(),
 		};
-		
+
 		await db.categories.add(newCategory);
 		return newCategory;
 	},
@@ -149,21 +155,23 @@ export const DatabaseService = {
 		return preferences.length > 0 ? preferences[0] : null;
 	},
 
-	async updatePreferences(preferences: UserPreferences): Promise<UserPreferences> {
+	async updatePreferences(
+		preferences: UserPreferences,
+	): Promise<UserPreferences> {
 		const existing = await DatabaseService.getPreferences();
 		const preferencesWithId = preferences as UserPreferences & { id?: string };
-		if (existing && 'id' in existing) {
+		if (existing && "id" in existing) {
 			const existingWithId = existing as UserPreferences & { id: string };
-			await db.preferences.update(existingWithId.id || '1', preferencesWithId);
+			await db.preferences.update(existingWithId.id || "1", preferencesWithId);
 		} else {
 			const newPreferences = {
 				...preferencesWithId,
-				id: '1'
+				id: "1",
 			};
 			await db.preferences.add(newPreferences);
 		}
 		return preferences;
-	}
+	},
 };
 
 // Legacy function for backward compatibility

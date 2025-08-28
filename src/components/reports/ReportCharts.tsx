@@ -1,48 +1,56 @@
+import { format } from "date-fns";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import {
-	AreaChart,
 	Area,
-	BarChart,
+	AreaChart,
 	Bar,
-	LineChart,
-	Line,
-	PieChart,
-	Pie,
+	BarChart,
+	CartesianGrid,
 	Cell,
+	ComposedChart,
+	Legend,
+	Line,
+	LineChart,
+	Pie,
+	PieChart,
+	ResponsiveContainer,
+	Tooltip,
 	XAxis,
 	YAxis,
-	CartesianGrid,
-	Tooltip,
-	Legend,
-	ResponsiveContainer,
-	ComposedChart
-} from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { format } from 'date-fns';
+} from "recharts";
 import type {
+	AccountPerformanceReport,
+	CashFlowReport,
+	CategoryBreakdownReport,
 	FinancialSummaryReport,
 	TransactionAnalysisReport,
-	CategoryBreakdownReport,
-	AccountPerformanceReport,
-	CashFlowReport
-} from '../../types/finance';
+} from "../../types/finance";
+import { Badge } from "../ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 // Color palette for charts
 const CHART_COLORS = {
-	primary: '#3b82f6',
-	secondary: '#10b981',
-	accent: '#f59e0b',
-	danger: '#ef4444',
-	warning: '#f97316',
-	info: '#06b6d4',
-	muted: '#6b7280',
-	success: '#22c55e'
+	primary: "#3b82f6",
+	secondary: "#10b981",
+	accent: "#f59e0b",
+	danger: "#ef4444",
+	warning: "#f97316",
+	info: "#06b6d4",
+	muted: "#6b7280",
+	success: "#22c55e",
 };
 
 const CATEGORY_COLORS = [
-	'#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-	'#06b6d4', '#f97316', '#22c55e', '#ec4899', '#6366f1'
+	"#3b82f6",
+	"#10b981",
+	"#f59e0b",
+	"#ef4444",
+	"#8b5cf6",
+	"#06b6d4",
+	"#f97316",
+	"#22c55e",
+	"#ec4899",
+	"#6366f1",
 ];
 
 // Custom tooltip component
@@ -62,9 +70,12 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
 			<div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-lg p-3 shadow-lg">
 				<p className="font-mono text-xs text-muted-foreground mb-2">{label}</p>
 				{payload.map((entry) => (
-					<div key={`tooltip-${entry.name}`} className="flex items-center gap-2 font-mono text-xs">
-						<div 
-							className="w-3 h-3 rounded-full" 
+					<div
+						key={`tooltip-${entry.name}`}
+						className="flex items-center gap-2 font-mono text-xs"
+					>
+						<div
+							className="w-3 h-3 rounded-full"
 							style={{ backgroundColor: entry.color }}
 						/>
 						<span className="text-foreground">
@@ -79,30 +90,61 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
 }
 
 // Trend indicator component
-function TrendIndicator({ value, className }: { value: number; className?: string }) {
+function TrendIndicator({
+	value,
+	className,
+}: {
+	value: number;
+	className?: string;
+}) {
 	const isPositive = value > 0;
 	const isNegative = value < 0;
-	
+
 	return (
 		<div className={`flex items-center gap-1 ${className}`}>
 			{isPositive && <TrendingUp className="h-4 w-4 text-green-500" />}
 			{isNegative && <TrendingDown className="h-4 w-4 text-red-500" />}
-			{!isPositive && !isNegative && <Minus className="h-4 w-4 text-muted-foreground" />}
-			<span className={`font-mono text-sm ${
-				isPositive ? 'text-green-500' : isNegative ? 'text-red-500' : 'text-muted-foreground'
-			}`}>
-				{isPositive ? '+' : ''}{value.toFixed(1)}%
+			{!isPositive && !isNegative && (
+				<Minus className="h-4 w-4 text-muted-foreground" />
+			)}
+			<span
+				className={`font-mono text-sm ${
+					isPositive
+						? "text-green-500"
+						: isNegative
+							? "text-red-500"
+							: "text-muted-foreground"
+				}`}
+			>
+				{isPositive ? "+" : ""}
+				{value.toFixed(1)}%
 			</span>
 		</div>
 	);
 }
 
 // Financial Summary Chart
-export function FinancialSummaryChart({ report }: { report: FinancialSummaryReport }) {
+export function FinancialSummaryChart({
+	report,
+}: {
+	report: FinancialSummaryReport;
+}) {
 	const data = [
-		{ name: 'Income', value: report.summary.totalIncome, color: CHART_COLORS.success },
-		{ name: 'Expenses', value: report.summary.totalExpenses, color: CHART_COLORS.danger },
-		{ name: 'Net Income', value: report.summary.netIncome, color: CHART_COLORS.primary }
+		{
+			name: "Income",
+			value: report.summary.totalIncome,
+			color: CHART_COLORS.success,
+		},
+		{
+			name: "Expenses",
+			value: report.summary.totalExpenses,
+			color: CHART_COLORS.danger,
+		},
+		{
+			name: "Net Income",
+			value: report.summary.netIncome,
+			color: CHART_COLORS.primary,
+		},
 	];
 
 	return (
@@ -118,14 +160,18 @@ export function FinancialSummaryChart({ report }: { report: FinancialSummaryRepo
 					<div className="h-64">
 						<ResponsiveContainer width="100%" height="100%">
 							<BarChart data={data}>
-								<CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-								<XAxis 
-									dataKey="name" 
-									tick={{ fontSize: 12, fontFamily: 'monospace' }}
+								<CartesianGrid
+									strokeDasharray="3 3"
+									stroke="#374151"
+									opacity={0.3}
+								/>
+								<XAxis
+									dataKey="name"
+									tick={{ fontSize: 12, fontFamily: "monospace" }}
 									stroke="#9ca3af"
 								/>
-								<YAxis 
-									tick={{ fontSize: 12, fontFamily: 'monospace' }}
+								<YAxis
+									tick={{ fontSize: 12, fontFamily: "monospace" }}
 									stroke="#9ca3af"
 									tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
 								/>
@@ -154,9 +200,13 @@ export function FinancialSummaryChart({ report }: { report: FinancialSummaryRepo
 								<p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
 									Cash Flow
 								</p>
-								<p className={`text-2xl font-mono font-bold ${
-									report.summary.cashFlow >= 0 ? 'text-green-500' : 'text-red-500'
-								}`}>
+								<p
+									className={`text-2xl font-mono font-bold ${
+										report.summary.cashFlow >= 0
+											? "text-green-500"
+											: "text-red-500"
+									}`}
+								>
 									${report.summary.cashFlow.toLocaleString()}
 								</p>
 							</div>
@@ -170,15 +220,21 @@ export function FinancialSummaryChart({ report }: { report: FinancialSummaryRepo
 								<div className="space-y-2">
 									<div className="flex justify-between items-center">
 										<span className="text-sm font-mono">Income</span>
-										<TrendIndicator value={report.periodComparison.changePercentage.income} />
+										<TrendIndicator
+											value={report.periodComparison.changePercentage.income}
+										/>
 									</div>
 									<div className="flex justify-between items-center">
 										<span className="text-sm font-mono">Expenses</span>
-										<TrendIndicator value={report.periodComparison.changePercentage.expenses} />
+										<TrendIndicator
+											value={report.periodComparison.changePercentage.expenses}
+										/>
 									</div>
 									<div className="flex justify-between items-center">
 										<span className="text-sm font-mono">Net Income</span>
-										<TrendIndicator value={report.periodComparison.changePercentage.netIncome} />
+										<TrendIndicator
+											value={report.periodComparison.changePercentage.netIncome}
+										/>
 									</div>
 								</div>
 							</div>
@@ -191,7 +247,11 @@ export function FinancialSummaryChart({ report }: { report: FinancialSummaryRepo
 }
 
 // Transaction Analysis Trend Chart
-export function TransactionTrendChart({ report }: { report: TransactionAnalysisReport }) {
+export function TransactionTrendChart({
+	report,
+}: {
+	report: TransactionAnalysisReport;
+}) {
 	return (
 		<Card>
 			<CardHeader>
@@ -203,49 +263,53 @@ export function TransactionTrendChart({ report }: { report: TransactionAnalysisR
 				<div className="h-80">
 					<ResponsiveContainer width="100%" height="100%">
 						<ComposedChart data={report.trendData}>
-							<CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-							<XAxis 
-								dataKey="date" 
-								tick={{ fontSize: 12, fontFamily: 'monospace' }}
-								stroke="#9ca3af"
-								tickFormatter={(value) => format(new Date(value), 'MMM dd')}
+							<CartesianGrid
+								strokeDasharray="3 3"
+								stroke="#374151"
+								opacity={0.3}
 							/>
-							<YAxis 
+							<XAxis
+								dataKey="date"
+								tick={{ fontSize: 12, fontFamily: "monospace" }}
+								stroke="#9ca3af"
+								tickFormatter={(value) => format(new Date(value), "MMM dd")}
+							/>
+							<YAxis
 								yAxisId="amount"
-								tick={{ fontSize: 12, fontFamily: 'monospace' }}
+								tick={{ fontSize: 12, fontFamily: "monospace" }}
 								stroke="#9ca3af"
 								tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
 							/>
-							<YAxis 
+							<YAxis
 								yAxisId="count"
 								orientation="right"
-								tick={{ fontSize: 12, fontFamily: 'monospace' }}
+								tick={{ fontSize: 12, fontFamily: "monospace" }}
 								stroke="#9ca3af"
 							/>
 							<Tooltip content={<CustomTooltip />} />
 							<Legend />
-							<Area 
+							<Area
 								yAxisId="amount"
-								type="monotone" 
-								dataKey="income" 
-								stroke={CHART_COLORS.success} 
+								type="monotone"
+								dataKey="income"
+								stroke={CHART_COLORS.success}
 								fill={CHART_COLORS.success}
 								fillOpacity={0.3}
 								name="Income"
 							/>
-							<Area 
+							<Area
 								yAxisId="amount"
-								type="monotone" 
-								dataKey="expenses" 
-								stroke={CHART_COLORS.danger} 
+								type="monotone"
+								dataKey="expenses"
+								stroke={CHART_COLORS.danger}
 								fill={CHART_COLORS.danger}
 								fillOpacity={0.3}
 								name="Expenses"
 							/>
-							<Line 
+							<Line
 								yAxisId="count"
-								type="monotone" 
-								dataKey="transactionCount" 
+								type="monotone"
+								dataKey="transactionCount"
 								stroke={CHART_COLORS.accent}
 								strokeWidth={2}
 								dot={{ fill: CHART_COLORS.accent, strokeWidth: 2, r: 4 }}
@@ -260,15 +324,19 @@ export function TransactionTrendChart({ report }: { report: TransactionAnalysisR
 }
 
 // Category Breakdown Pie Chart
-export function CategoryBreakdownChart({ report }: { report: CategoryBreakdownReport }) {
+export function CategoryBreakdownChart({
+	report,
+}: {
+	report: CategoryBreakdownReport;
+}) {
 	const expenseData = report.expenseCategories.map((category, index) => ({
 		...category,
-		color: CATEGORY_COLORS[index % CATEGORY_COLORS.length]
+		color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
 	}));
 
 	const incomeData = report.incomeCategories.map((category, index) => ({
 		...category,
-		color: CATEGORY_COLORS[index % CATEGORY_COLORS.length]
+		color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
 	}));
 
 	return (
@@ -299,7 +367,10 @@ export function CategoryBreakdownChart({ report }: { report: CategoryBreakdownRe
 										dataKey="amount"
 									>
 										{expenseData.map((entry, index) => (
-											<Cell key={`expense-cell-${entry.category}-${index}`} fill={entry.color} />
+											<Cell
+												key={`expense-cell-${entry.category}-${index}`}
+												fill={entry.color}
+											/>
 										))}
 									</Pie>
 									<Tooltip content={<CustomTooltip />} />
@@ -308,13 +379,18 @@ export function CategoryBreakdownChart({ report }: { report: CategoryBreakdownRe
 						</div>
 						<div className="space-y-2 mt-4">
 							{expenseData.slice(0, 5).map((category, index) => (
-								<div key={`expense-${category.category}-${index}`} className="flex items-center justify-between">
+								<div
+									key={`expense-${category.category}-${index}`}
+									className="flex items-center justify-between"
+								>
 									<div className="flex items-center gap-2">
-										<div 
-											className="w-3 h-3 rounded-full" 
+										<div
+											className="w-3 h-3 rounded-full"
 											style={{ backgroundColor: category.color }}
 										/>
-										<span className="text-xs font-mono">{category.category}</span>
+										<span className="text-xs font-mono">
+											{category.category}
+										</span>
 									</div>
 									<Badge variant="secondary" className="font-mono text-xs">
 										${category.amount.toLocaleString()}
@@ -343,7 +419,10 @@ export function CategoryBreakdownChart({ report }: { report: CategoryBreakdownRe
 										dataKey="amount"
 									>
 										{incomeData.map((entry, index) => (
-											<Cell key={`income-cell-${entry.category}-${index}`} fill={entry.color} />
+											<Cell
+												key={`income-cell-${entry.category}-${index}`}
+												fill={entry.color}
+											/>
 										))}
 									</Pie>
 									<Tooltip content={<CustomTooltip />} />
@@ -352,13 +431,18 @@ export function CategoryBreakdownChart({ report }: { report: CategoryBreakdownRe
 						</div>
 						<div className="space-y-2 mt-4">
 							{incomeData.slice(0, 5).map((category, index) => (
-								<div key={`income-${category.category}-${index}`} className="flex items-center justify-between">
+								<div
+									key={`income-${category.category}-${index}`}
+									className="flex items-center justify-between"
+								>
 									<div className="flex items-center gap-2">
-										<div 
-											className="w-3 h-3 rounded-full" 
+										<div
+											className="w-3 h-3 rounded-full"
 											style={{ backgroundColor: category.color }}
 										/>
-										<span className="text-xs font-mono">{category.category}</span>
+										<span className="text-xs font-mono">
+											{category.category}
+										</span>
 									</div>
 									<Badge variant="secondary" className="font-mono text-xs">
 										${category.amount.toLocaleString()}
@@ -374,13 +458,17 @@ export function CategoryBreakdownChart({ report }: { report: CategoryBreakdownRe
 }
 
 // Account Performance Chart
-export function AccountPerformanceChart({ report }: { report: AccountPerformanceReport }) {
-	const chartData = report.accounts.map(account => ({
+export function AccountPerformanceChart({
+	report,
+}: {
+	report: AccountPerformanceReport;
+}) {
+	const chartData = report.accounts.map((account) => ({
 		name: account.name,
 		startingBalance: account.startingBalance,
 		endingBalance: account.endingBalance,
 		netChange: account.netChange,
-		performanceScore: account.performanceScore
+		performanceScore: account.performanceScore,
 	}));
 
 	return (
@@ -394,30 +482,34 @@ export function AccountPerformanceChart({ report }: { report: AccountPerformance
 				<div className="h-80">
 					<ResponsiveContainer width="100%" height="100%">
 						<BarChart data={chartData} layout="horizontal">
-							<CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-							<XAxis 
+							<CartesianGrid
+								strokeDasharray="3 3"
+								stroke="#374151"
+								opacity={0.3}
+							/>
+							<XAxis
 								type="number"
-								tick={{ fontSize: 12, fontFamily: 'monospace' }}
+								tick={{ fontSize: 12, fontFamily: "monospace" }}
 								stroke="#9ca3af"
 								tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
 							/>
-							<YAxis 
+							<YAxis
 								type="category"
-								dataKey="name" 
-								tick={{ fontSize: 12, fontFamily: 'monospace' }}
+								dataKey="name"
+								tick={{ fontSize: 12, fontFamily: "monospace" }}
 								stroke="#9ca3af"
 								width={100}
 							/>
 							<Tooltip content={<CustomTooltip />} />
 							<Legend />
-							<Bar 
-								dataKey="startingBalance" 
+							<Bar
+								dataKey="startingBalance"
 								fill={CHART_COLORS.muted}
 								name="Starting Balance"
 								radius={[0, 4, 4, 0]}
 							/>
-							<Bar 
-								dataKey="endingBalance" 
+							<Bar
+								dataKey="endingBalance"
 								fill={CHART_COLORS.primary}
 								name="Ending Balance"
 								radius={[0, 4, 4, 0]}
@@ -443,35 +535,39 @@ export function CashFlowChart({ report }: { report: CashFlowReport }) {
 				<div className="h-80">
 					<ResponsiveContainer width="100%" height="100%">
 						<ComposedChart data={report.cashFlowData}>
-							<CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-							<XAxis 
-								dataKey="date" 
-								tick={{ fontSize: 12, fontFamily: 'monospace' }}
-								stroke="#9ca3af"
-								tickFormatter={(value) => format(new Date(value), 'MMM dd')}
+							<CartesianGrid
+								strokeDasharray="3 3"
+								stroke="#374151"
+								opacity={0.3}
 							/>
-							<YAxis 
-								tick={{ fontSize: 12, fontFamily: 'monospace' }}
+							<XAxis
+								dataKey="date"
+								tick={{ fontSize: 12, fontFamily: "monospace" }}
+								stroke="#9ca3af"
+								tickFormatter={(value) => format(new Date(value), "MMM dd")}
+							/>
+							<YAxis
+								tick={{ fontSize: 12, fontFamily: "monospace" }}
 								stroke="#9ca3af"
 								tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
 							/>
 							<Tooltip content={<CustomTooltip />} />
 							<Legend />
-							<Bar 
-								dataKey="inflows" 
+							<Bar
+								dataKey="inflows"
 								fill={CHART_COLORS.success}
 								name="Inflows"
 								radius={[4, 4, 0, 0]}
 							/>
-							<Bar 
-								dataKey="outflows" 
+							<Bar
+								dataKey="outflows"
 								fill={CHART_COLORS.danger}
 								name="Outflows"
 								radius={[4, 4, 0, 0]}
 							/>
-							<Line 
-								type="monotone" 
-								dataKey="runningBalance" 
+							<Line
+								type="monotone"
+								dataKey="runningBalance"
 								stroke={CHART_COLORS.primary}
 								strokeWidth={3}
 								dot={{ fill: CHART_COLORS.primary, strokeWidth: 2, r: 4 }}
@@ -492,11 +588,30 @@ interface PerformanceMetrics {
 	financialHealthScore: number;
 }
 
-export function PerformanceMetricsChart({ metrics }: { metrics: PerformanceMetrics }) {
+export function PerformanceMetricsChart({
+	metrics,
+}: {
+	metrics: PerformanceMetrics;
+}) {
 	const metricsData = [
-		{ name: 'Savings Rate', value: metrics.savingsRate, target: 20, color: CHART_COLORS.success },
-		{ name: 'Expense Ratio', value: metrics.expenseRatio, target: 80, color: CHART_COLORS.warning },
-		{ name: 'Financial Health', value: metrics.financialHealthScore, target: 85, color: CHART_COLORS.primary }
+		{
+			name: "Savings Rate",
+			value: metrics.savingsRate,
+			target: 20,
+			color: CHART_COLORS.success,
+		},
+		{
+			name: "Expense Ratio",
+			value: metrics.expenseRatio,
+			target: 80,
+			color: CHART_COLORS.warning,
+		},
+		{
+			name: "Financial Health",
+			value: metrics.financialHealthScore,
+			target: 85,
+			color: CHART_COLORS.primary,
+		},
 	];
 
 	return (
@@ -518,16 +633,16 @@ export function PerformanceMetricsChart({ metrics }: { metrics: PerformanceMetri
 							</div>
 							<div className="relative">
 								<div className="w-full bg-muted rounded-full h-2">
-									<div 
+									<div
 										className="h-2 rounded-full transition-all duration-300"
-										style={{ 
+										style={{
 											width: `${Math.min(metric.value, 100)}%`,
-											backgroundColor: metric.color
+											backgroundColor: metric.color,
 										}}
 									/>
 								</div>
 								{/* Target indicator */}
-								<div 
+								<div
 									className="absolute top-0 w-0.5 h-2 bg-foreground/50"
 									style={{ left: `${metric.target}%` }}
 								/>

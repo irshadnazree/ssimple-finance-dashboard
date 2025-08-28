@@ -1,11 +1,32 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { ReportsPage } from '../components/reports/ReportsPage';
-import { ReportsLayout, ReportsSection, ReportsGrid, ReportsTabContent } from '../components/layout';
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { BarChart3, FileText, PieChart, TrendingUp, Activity } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+	Activity,
+	BarChart3,
+	FileText,
+	PieChart,
+	TrendingUp,
+} from "lucide-react";
+import {
+	ReportsGrid,
+	ReportsLayout,
+	ReportsSection,
+	ReportsTabContent,
+} from "../components/layout";
+import { ReportsPage } from "../components/reports/ReportsPage";
+import {
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+} from "../components/ui/card";
+import {
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from "../components/ui/tabs";
 
-export const Route = createFileRoute('/reports')({component: Reports,})
+export const Route = createFileRoute("/reports")({ component: Reports });
 
 function Reports() {
 	return (
@@ -48,8 +69,12 @@ function Reports() {
 													<BarChart3 className="h-5 w-5" />
 												</div>
 												<div className="flex-1">
-													<h3 className="font-semibold text-sm mb-1">Financial Summary</h3>
-													<p className="text-xs text-muted-foreground">Overview of income, expenses, and net worth</p>
+													<h3 className="font-semibold text-sm mb-1">
+														Financial Summary
+													</h3>
+													<p className="text-xs text-muted-foreground">
+														Overview of income, expenses, and net worth
+													</p>
 												</div>
 											</div>
 										</CardContent>
@@ -65,8 +90,12 @@ function Reports() {
 													<PieChart className="h-5 w-5" />
 												</div>
 												<div className="flex-1">
-													<h3 className="font-semibold text-sm mb-1">Category Breakdown</h3>
-													<p className="text-xs text-muted-foreground">Spending distribution across categories</p>
+													<h3 className="font-semibold text-sm mb-1">
+														Category Breakdown
+													</h3>
+													<p className="text-xs text-muted-foreground">
+														Spending distribution across categories
+													</p>
 												</div>
 											</div>
 										</CardContent>
@@ -78,8 +107,12 @@ function Reports() {
 													<Activity className="h-5 w-5" />
 												</div>
 												<div className="flex-1">
-													<h3 className="font-semibold text-sm mb-1">Cash Flow Analysis</h3>
-													<p className="text-xs text-muted-foreground">Money flow in and out over time</p>
+													<h3 className="font-semibold text-sm mb-1">
+														Cash Flow Analysis
+													</h3>
+													<p className="text-xs text-muted-foreground">
+														Money flow in and out over time
+													</p>
 												</div>
 											</div>
 										</CardContent>
@@ -95,8 +128,12 @@ function Reports() {
 													<TrendingUp className="h-5 w-5" />
 												</div>
 												<div className="flex-1">
-													<h3 className="font-semibold text-sm mb-1">Account Performance</h3>
-													<p className="text-xs text-muted-foreground">Growth and performance metrics by account</p>
+													<h3 className="font-semibold text-sm mb-1">
+														Account Performance
+													</h3>
+													<p className="text-xs text-muted-foreground">
+														Growth and performance metrics by account
+													</p>
 												</div>
 											</div>
 										</CardContent>

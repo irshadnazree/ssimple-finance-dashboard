@@ -1,4 +1,12 @@
-import { Settings, User, Shield, Bell, Database, Palette, Download } from "lucide-react";
+import {
+	Bell,
+	Database,
+	Download,
+	Palette,
+	Settings,
+	Shield,
+	User,
+} from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface SettingsNavigationProps {
@@ -9,44 +17,48 @@ interface SettingsNavigationProps {
 
 const settingsSections = [
 	{
-		id: 'profile',
-		label: 'Profile',
-		description: 'Personal information and preferences',
+		id: "profile",
+		label: "Profile",
+		description: "Personal information and preferences",
 		icon: User,
 	},
 	{
-		id: 'security',
-		label: 'Security',
-		description: 'Password and authentication settings',
+		id: "security",
+		label: "Security",
+		description: "Password and authentication settings",
 		icon: Shield,
 	},
 	{
-		id: 'notifications',
-		label: 'Notifications',
-		description: 'Email and push notification preferences',
+		id: "notifications",
+		label: "Notifications",
+		description: "Email and push notification preferences",
 		icon: Bell,
 	},
 	{
-		id: 'data',
-		label: 'Data & Storage',
-		description: 'Backup, sync, and data management',
+		id: "data",
+		label: "Data & Storage",
+		description: "Backup, sync, and data management",
 		icon: Database,
 	},
 	{
-		id: 'appearance',
-		label: 'Appearance',
-		description: 'Theme, layout, and display preferences',
+		id: "appearance",
+		label: "Appearance",
+		description: "Theme, layout, and display preferences",
 		icon: Palette,
 	},
 	{
-		id: 'export',
-		label: 'Export & Import',
-		description: 'Data export and import options',
+		id: "export",
+		label: "Export & Import",
+		description: "Data export and import options",
 		icon: Download,
 	},
 ];
 
-export function SettingsNavigation({ activeSection, onSectionChange, className }: SettingsNavigationProps) {
+export function SettingsNavigation({
+	activeSection,
+	onSectionChange,
+	className,
+}: SettingsNavigationProps) {
 	return (
 		<nav className={cn("space-y-2", className)}>
 			<div className="mb-6">
@@ -68,21 +80,29 @@ export function SettingsNavigation({ activeSection, onSectionChange, className }
 						onClick={() => onSectionChange(section.id)}
 						className={cn(
 							"w-full text-left p-4 rounded-lg transition-all hover:bg-accent/50",
-							isActive ? "bg-primary/10 border-l-4 border-primary" : "hover:bg-accent/30"
+							isActive
+								? "bg-primary/10 border-l-4 border-primary"
+								: "hover:bg-accent/30",
 						)}
 					>
 						<div className="flex items-start gap-3">
-							<div className={cn(
-								"p-2 rounded-lg",
-								isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-							)}>
+							<div
+								className={cn(
+									"p-2 rounded-lg",
+									isActive
+										? "bg-primary/20 text-primary"
+										: "bg-muted text-muted-foreground",
+								)}
+							>
 								<Icon className="h-4 w-4" />
 							</div>
 							<div className="flex-1">
-								<h3 className={cn(
-									"font-semibold text-sm mb-1",
-									isActive ? "text-primary" : "text-foreground"
-								)}>
+								<h3
+									className={cn(
+										"font-semibold text-sm mb-1",
+										isActive ? "text-primary" : "text-foreground",
+									)}
+								>
 									{section.label}
 								</h3>
 								<p className="text-xs text-muted-foreground">

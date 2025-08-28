@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import FinanceChart from "../components/charts/FinanceChart";
 import DashboardSummary from "../components/dashboard/DashboardSummary";
-import { QuickActions } from "../components/dashboard/QuickActions";
 import { FinancialHealthIndicators } from "../components/dashboard/FinancialHealthIndicators";
+import { QuickActions } from "../components/dashboard/QuickActions";
 import { RecentActivityFeed } from "../components/dashboard/RecentActivityFeed";
+import {
+	DashboardGrid,
+	DashboardLayout,
+	DashboardSection,
+} from "../components/layout";
 import { Button } from "../components/ui/button";
-import { DashboardLayout, DashboardSection, DashboardGrid } from "../components/layout";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useUIStore } from "../stores/uiStore";
 import type { Transaction } from "../types/finance";
@@ -17,11 +21,11 @@ function Dashboard() {
 	const [chartTimeframe, setChartTimeframe] = useState<
 		"week" | "month" | "year"
 	>("month");
-	
+
 	// Zustand stores
 	const { transactions, refreshTransactions } = useTransactionStore();
 	const { openTransactionModal } = useUIStore();
-	
+
 	// Get recent transactions from store
 	const recentTransactions = transactions
 		.sort((a, b) => b.date.getTime() - a.date.getTime())
@@ -34,7 +38,7 @@ function Dashboard() {
 		emergencyFundMonths: 4.2,
 		monthlyBudgetUsage: 82.3,
 		incomeGrowth: 5.2,
-		expenseGrowth: 3.1
+		expenseGrowth: 3.1,
 	};
 
 	useEffect(() => {
@@ -80,9 +84,7 @@ function Dashboard() {
 						{(["week", "month", "year"] as const).map((timeframe) => (
 							<Button
 								key={timeframe}
-								variant={
-									chartTimeframe === timeframe ? "default" : "outline"
-								}
+								variant={chartTimeframe === timeframe ? "default" : "outline"}
 								size="sm"
 								onClick={() => setChartTimeframe(timeframe)}
 							>

@@ -69,16 +69,26 @@ export class TransactionManager {
 
 	// CRUD Operations
 	async createTransaction(
-		transactionData: Omit<Transaction, "id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage">,
+		transactionData: Omit<
+			Transaction,
+			| "id"
+			| "createdAt"
+			| "updatedAt"
+			| "status"
+			| "processedAt"
+			| "errorMessage"
+		>,
 	): Promise<Transaction> {
 		// Add default status for new transactions
 		const transactionWithStatus = {
 			...transactionData,
-			status: 'pending' as const
+			status: "pending" as const,
 		};
 
 		// Validate transaction data
-		const validationErrors = await this.validateTransaction(transactionWithStatus);
+		const validationErrors = await this.validateTransaction(
+			transactionWithStatus,
+		);
 		if (validationErrors.length > 0) {
 			throw new Error(
 				`Validation failed: ${validationErrors.map((e) => e.message).join(", ")}`,
@@ -86,15 +96,16 @@ export class TransactionManager {
 		}
 
 		// Create transaction
-		const transaction =
-			await DatabaseService.createTransaction(transactionWithStatus);
+		const transaction = await DatabaseService.createTransaction(
+			transactionWithStatus,
+		);
 
 		// Process the transaction asynchronously
 		setTimeout(async () => {
 			try {
 				await this.processTransaction(transaction);
 			} catch (error) {
-				console.error('Failed to process transaction:', error);
+				console.error("Failed to process transaction:", error);
 			}
 		}, 0);
 
@@ -157,50 +168,62 @@ export class TransactionManager {
 	// Transaction Status Management
 	async updateTransactionStatus(
 		id: string,
-		status: Transaction['status'],
-		errorMessage?: string
+		status: Transaction["status"],
+		errorMessage?: string,
 	): Promise<Transaction | undefined> {
 		const updates: Partial<Transaction> = {
 			status,
-			processedAt: status === 'completed' || status === 'failed' || status === 'cancelled' ? new Date() : undefined,
-			errorMessage: status === 'failed' ? errorMessage : undefined
+			processedAt:
+				status === "completed" || status === "failed" || status === "cancelled"
+					? new Date()
+					: undefined,
+			errorMessage: status === "failed" ? errorMessage : undefined,
 		};
 
 		return await this.updateTransaction(id, updates);
 	}
 
-	async getTransactionsByStatus(status: Transaction['status']): Promise<Transaction[]> {
+	async getTransactionsByStatus(
+		status: Transaction["status"],
+	): Promise<Transaction[]> {
 		const transactions = await DatabaseService.getTransactions();
-		return transactions.filter(t => t.status === status);
+		return transactions.filter((t) => t.status === status);
 	}
 
 	async getPendingTransactions(): Promise<Transaction[]> {
-		return await this.getTransactionsByStatus('pending');
+		return await this.getTransactionsByStatus("pending");
 	}
 
 	async getFailedTransactions(): Promise<Transaction[]> {
-		return await this.getTransactionsByStatus('failed');
+		return await this.getTransactionsByStatus("failed");
 	}
 
 	async retryFailedTransaction(id: string): Promise<Transaction | undefined> {
 		const transaction = await this.getTransaction(id);
-		if (!transaction || transaction.status !== 'failed') {
-			throw new Error('Transaction not found or not in failed state');
+		if (!transaction || transaction.status !== "failed") {
+			throw new Error("Transaction not found or not in failed state");
 		}
 
 		try {
 			// Reset status to pending and clear error message
-			const updatedTransaction = await this.updateTransactionStatus(id, 'pending');
-			
+			const updatedTransaction = await this.updateTransactionStatus(
+				id,
+				"pending",
+			);
+
 			// Process the transaction again
 			if (updatedTransaction) {
 				await this.processTransaction(updatedTransaction);
 			}
-			
+
 			return updatedTransaction;
 		} catch (error) {
 			// Mark as failed again if processing fails
-			await this.updateTransactionStatus(id, 'failed', error instanceof Error ? error.message : 'Unknown error');
+			await this.updateTransactionStatus(
+				id,
+				"failed",
+				error instanceof Error ? error.message : "Unknown error",
+			);
 			throw error;
 		}
 	}
@@ -208,30 +231,37 @@ export class TransactionManager {
 	async processTransaction(transaction: Transaction): Promise<void> {
 		try {
 			// Mark as processing
-			await this.updateTransactionStatus(transaction.id, 'pending');
-			
+			await this.updateTransactionStatus(transaction.id, "pending");
+
 			// Simulate processing time for demo purposes
-			await new Promise(resolve => setTimeout(resolve, 1000));
-			
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+
 			// Update account balance if not already done
-			if (transaction.status !== 'completed') {
+			if (transaction.status !== "completed") {
 				await this.updateAccountBalance(transaction);
 			}
-			
+
 			// Mark as completed
-			await this.updateTransactionStatus(transaction.id, 'completed');
+			await this.updateTransactionStatus(transaction.id, "completed");
 		} catch (error) {
 			// Mark as failed
-			await this.updateTransactionStatus(transaction.id, 'failed', error instanceof Error ? error.message : 'Processing failed');
+			await this.updateTransactionStatus(
+				transaction.id,
+				"failed",
+				error instanceof Error ? error.message : "Processing failed",
+			);
 			throw error;
 		}
 	}
 
 	async bulkUpdateTransactionStatus(
 		ids: string[],
-		status: Transaction['status'],
-		errorMessage?: string
-	): Promise<{ successful: string[]; failed: Array<{ id: string; error: string }> }> {
+		status: Transaction["status"],
+		errorMessage?: string,
+	): Promise<{
+		successful: string[];
+		failed: Array<{ id: string; error: string }>;
+	}> {
 		const successful: string[] = [];
 		const failed: Array<{ id: string; error: string }> = [];
 
@@ -242,7 +272,7 @@ export class TransactionManager {
 			} catch (error) {
 				failed.push({
 					id,
-					error: error instanceof Error ? error.message : 'Unknown error'
+					error: error instanceof Error ? error.message : "Unknown error",
 				});
 			}
 		}
@@ -251,8 +281,6 @@ export class TransactionManager {
 	}
 
 	async getTransactions(filters?: TransactionFilters): Promise<Transaction[]> {
-
-
 		let transactions = await DatabaseService.getTransactions();
 
 		// Apply additional filters
@@ -278,7 +306,17 @@ export class TransactionManager {
 
 	// Bulk Operations
 	async createBulkTransactions(
-		transactions: Array<Omit<Transaction, "id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage">>,
+		transactions: Array<
+			Omit<
+				Transaction,
+				| "id"
+				| "createdAt"
+				| "updatedAt"
+				| "status"
+				| "processedAt"
+				| "errorMessage"
+			>
+		>,
 	): Promise<BulkTransactionResult> {
 		const result: BulkTransactionResult = {
 			successful: [],
@@ -295,9 +333,11 @@ export class TransactionManager {
 				// Add default status for bulk transactions
 				const transactionWithStatus = {
 					...transactionData,
-					status: 'pending' as const
+					status: "pending" as const,
 				};
-				const transaction = await DatabaseService.createTransaction(transactionWithStatus);
+				const transaction = await DatabaseService.createTransaction(
+					transactionWithStatus,
+				);
 				result.successful.push(transaction);
 				result.summary.successful++;
 			} catch (error) {
@@ -527,17 +567,22 @@ export class TransactionManager {
 			) {
 				try {
 					const transactionData: Omit<
-					Transaction,
-					"id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage"
-				> = {
-					amount: transaction.amount,
-					description: transaction.description,
-					category: transaction.category,
-					account: transaction.account,
-					type: transaction.type,
-					date: today,
-					currency: transaction.currency || 'MYR'
-				};
+						Transaction,
+						| "id"
+						| "createdAt"
+						| "updatedAt"
+						| "status"
+						| "processedAt"
+						| "errorMessage"
+					> = {
+						amount: transaction.amount,
+						description: transaction.description,
+						category: transaction.category,
+						account: transaction.account,
+						type: transaction.type,
+						date: today,
+						currency: transaction.currency || "MYR",
+					};
 
 					const newTransaction = await this.createTransaction(transactionData);
 					processedTransactions.push(newTransaction);
@@ -707,15 +752,21 @@ export class TransactionManager {
 		return JSON.stringify(transactions, null, 2);
 	}
 
-
-
 	// Updated import function to handle external format
 	async importTransactions(
 		data: string,
 		format: "json" | "csv" | "external-json" = "json",
 	): Promise<BulkTransactionResult> {
 		let transactions: Array<
-			Omit<Transaction, "id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage">
+			Omit<
+				Transaction,
+				| "id"
+				| "createdAt"
+				| "updatedAt"
+				| "status"
+				| "processedAt"
+				| "errorMessage"
+			>
 		>;
 
 		if (format === "csv") {
@@ -734,10 +785,11 @@ export class TransactionManager {
 
 	// New method to export in external format
 	async exportTransactionsExternal(
-		filters?: TransactionFilters
+		filters?: TransactionFilters,
 	): Promise<string> {
 		const transactions = await this.getTransactions(filters);
-		const externalFormat = DataTransformUtils.toExternalFormatArray(transactions);
+		const externalFormat =
+			DataTransformUtils.toExternalFormatArray(transactions);
 		return JSON.stringify(externalFormat, null, 2);
 	}
 
@@ -747,7 +799,7 @@ export class TransactionManager {
 
 		const headers = [
 			"Date",
-			"Account", 
+			"Account",
 			"Category",
 			"Subcategory",
 			"Note",
@@ -756,21 +808,21 @@ export class TransactionManager {
 			"Description",
 			"Amount",
 			"Currency",
-			"Account_2"
+			"Account_2",
 		];
-		
+
 		const rows = transactions.map((t) => [
 			new Date(t.date).toISOString(),
 			t.account,
 			t.category,
-			t.subcategory || '',
-			t.note || '',
+			t.subcategory || "",
+			t.note || "",
 			t.myr || t.amount,
-			t.incomeExpense || (t.type === 'income' ? 'Income' : 'Expense'),
+			t.incomeExpense || (t.type === "income" ? "Income" : "Expense"),
 			t.description,
 			t.amount.toString(),
-			t.currency || 'MYR',
-			t.account2 || t.amount
+			t.currency || "MYR",
+			t.account2 || t.amount,
 		]);
 
 		return [headers, ...rows]
@@ -781,7 +833,17 @@ export class TransactionManager {
 	// Updated CSV parsing to handle new fields
 	private parseCSV(
 		csvData: string,
-	): Array<Omit<Transaction, "id" | "createdAt" | "updatedAt" | "status" | "processedAt" | "errorMessage">> {
+	): Array<
+		Omit<
+			Transaction,
+			| "id"
+			| "createdAt"
+			| "updatedAt"
+			| "status"
+			| "processedAt"
+			| "errorMessage"
+		>
+	> {
 		const lines = csvData.trim().split("\n");
 		const headers = lines[0].split(",").map((h) => h.replace(/"/g, ""));
 
@@ -789,7 +851,7 @@ export class TransactionManager {
 			const values = line.split(",").map((v) => v.replace(/"/g, ""));
 
 			// Handle both old and new CSV formats
-			if (headers.includes('MYR')) {
+			if (headers.includes("MYR")) {
 				// New format with all fields
 				return {
 					date: new Date(values[0]),
@@ -798,12 +860,12 @@ export class TransactionManager {
 					subcategory: values[3] || undefined,
 					note: values[4] || undefined,
 					myr: Number.parseFloat(values[5]),
-					incomeExpense: values[6] as 'Income' | 'Expense',
+					incomeExpense: values[6] as "Income" | "Expense",
 					description: values[7],
 					amount: Number.parseFloat(values[8]),
 					currency: values[9],
 					account2: Number.parseFloat(values[10]),
-					type: values[6].toLowerCase() as Transaction["type"]
+					type: values[6].toLowerCase() as Transaction["type"],
 				};
 			}
 			// Legacy format
@@ -814,10 +876,10 @@ export class TransactionManager {
 				type: values[3] as Transaction["type"],
 				category: values[4],
 				account: values[5],
-				currency: 'MYR',
+				currency: "MYR",
 				myr: Number.parseFloat(values[2]),
-				incomeExpense: values[3] === 'income' ? 'Income' : 'Expense',
-				account2: Number.parseFloat(values[2])
+				incomeExpense: values[3] === "income" ? "Income" : "Expense",
+				account2: Number.parseFloat(values[2]),
 			};
 		});
 	}

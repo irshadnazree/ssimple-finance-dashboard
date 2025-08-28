@@ -1,12 +1,24 @@
-import type { AuthEvent, AuthResult, AuthMethod, AuthConfig, AuthState } from "../../types/auth";
+import type {
+	AuthConfig,
+	AuthEvent,
+	AuthMethod,
+	AuthResult,
+	AuthState,
+} from "../../types/auth";
 
 /**
  * Interface for authentication service that can be used with SessionManager
  */
 export interface IAuthService {
 	initialize(): Promise<void>;
-	setupAuth(method: AuthMethod, credentials: { pin?: string; biometricConsent?: boolean }): Promise<AuthResult>;
-	authenticate(method: AuthMethod, credentials?: { pin?: string }): Promise<AuthResult>;
+	setupAuth(
+		method: AuthMethod,
+		credentials: { pin?: string; biometricConsent?: boolean },
+	): Promise<AuthResult>;
+	authenticate(
+		method: AuthMethod,
+		credentials?: { pin?: string },
+	): Promise<AuthResult>;
 	logout(): Promise<void>;
 	updateConfig(newConfig: Partial<AuthConfig>): Promise<void>;
 	getFailedAttempts(): number;

@@ -7,8 +7,8 @@ import {
 	Lock,
 } from "lucide-react";
 import { useState } from "react";
-import { useAuthStore } from "../../stores/authStore";
 import { cn } from "../../lib/utils";
+import { useAuthStore } from "../../stores/authStore";
 import type { AuthResult } from "../../types/auth";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
@@ -59,11 +59,14 @@ export function PinSetup({ onResult, onBack }: PinSetupProps) {
 		}
 
 		// Validate PIN format - ensure it's not all same digits or sequential
-		const isAllSame = pin.split('').every(digit => digit === pin[0]);
-		const isSequential = pin === '123456' || pin === '654321' || pin === '000000';
-		
+		const isAllSame = pin.split("").every((digit) => digit === pin[0]);
+		const isSequential =
+			pin === "123456" || pin === "654321" || pin === "000000";
+
 		if (isAllSame || isSequential) {
-			setError("Please choose a more secure PIN (avoid repeated or sequential digits)");
+			setError(
+				"Please choose a more secure PIN (avoid repeated or sequential digits)",
+			);
 			return;
 		}
 
@@ -87,7 +90,7 @@ export function PinSetup({ onResult, onBack }: PinSetupProps) {
 		setError(null);
 
 		try {
-			const result = await setupAuth('pin', { pin });
+			const result = await setupAuth("pin", { pin });
 			onResult(result);
 		} catch (err) {
 			console.error("PIN setup error:", err);
@@ -186,16 +189,16 @@ export function PinSetup({ onResult, onBack }: PinSetupProps) {
 					{/* PIN Strength Indicator */}
 					<div className="flex justify-center space-x-2">
 						{[0, 1, 2, 3, 4, 5].map((dotIndex) => (
-				<div
-					key={`pin-dot-${dotIndex}`}
-							className={cn(
-								"w-3 h-3 rounded-full border-2 transition-all duration-200",
-								dotIndex < currentPin.length
-									? "bg-primary border-primary"
-									: "border-muted-foreground/30",
-							)}
-						/>
-					))}
+							<div
+								key={`pin-dot-${dotIndex}`}
+								className={cn(
+									"w-3 h-3 rounded-full border-2 transition-all duration-200",
+									dotIndex < currentPin.length
+										? "bg-primary border-primary"
+										: "border-muted-foreground/30",
+								)}
+							/>
+						))}
 					</div>
 				</div>
 

@@ -199,10 +199,7 @@ export default function GoogleDriveSettings() {
 			setUploadProgress(50);
 
 			// Process the data using transaction store
-			const result = await importTransactions(
-				JSON.stringify(data),
-				"json",
-			);
+			const result = await importTransactions(JSON.stringify(data), "json");
 			setUploadProgress(100);
 
 			setUploadResult({

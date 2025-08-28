@@ -11,12 +11,12 @@ export interface Transaction {
 	recurring?: RecurringTransaction;
 	createdAt: Date;
 	updatedAt: Date;
-	
+
 	// Transaction status management
 	status: "pending" | "completed" | "cancelled" | "failed";
 	processedAt?: Date;
 	errorMessage?: string;
-	
+
 	// New fields to match the provided JSON format
 	note?: string | null;
 	currency: string;
@@ -46,8 +46,6 @@ export interface RecurringTransaction {
 	endDate?: Date;
 	nextDue: Date;
 }
-
-
 
 export interface Account {
 	id: string;
@@ -136,7 +134,7 @@ export interface ChartDataPoint {
 }
 
 // Report Types and Data Models
-export type ReportType = 
+export type ReportType =
 	| "financial-summary"
 	| "transaction-analysis"
 	| "category-breakdown"
@@ -148,7 +146,14 @@ export type ReportType =
 
 export type TransactionType = Transaction["type"];
 
-export type ReportPeriod = "7d" | "30d" | "90d" | "6m" | "1y" | "ytd" | "custom";
+export type ReportPeriod =
+	| "7d"
+	| "30d"
+	| "90d"
+	| "6m"
+	| "1y"
+	| "ytd"
+	| "custom";
 
 export type ExportFormat = "pdf" | "csv" | "excel" | "json";
 
@@ -363,7 +368,12 @@ export interface ReportCache {
 	id: string;
 	reportType: ReportType;
 	filtersHash: string;
-	data: FinancialSummaryReport | TransactionAnalysisReport | CategoryBreakdownReport | AccountPerformanceReport | CashFlowReport;
+	data:
+		| FinancialSummaryReport
+		| TransactionAnalysisReport
+		| CategoryBreakdownReport
+		| AccountPerformanceReport
+		| CashFlowReport;
 	generatedAt: Date;
 	expiresAt: Date;
 	hitCount: number;

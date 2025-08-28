@@ -1,16 +1,26 @@
-import { Shield, Key, Smartphone, Eye, EyeOff, Lock, Fingerprint, Settings, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+	AlertTriangle,
+	Eye,
+	EyeOff,
+	Fingerprint,
+	Key,
+	Lock,
+	Settings,
+	Shield,
+	Smartphone,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { biometricAuthService } from "../../lib/auth/biometricAuthService";
+import { useToast } from "../../lib/hooks/useToast";
+import { useAuthStore } from "../../stores/authStore";
+import type { AuthState, BiometricCapabilities } from "../../types/auth";
+import { Alert, AlertDescription } from "../ui/alert";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
-import { Badge } from "../ui/badge";
-import { Alert, AlertDescription } from "../ui/alert";
-import { useToast } from "../../lib/hooks/useToast";
-import { useAuthStore } from "../../stores/authStore";
-import { biometricAuthService } from "../../lib/auth/biometricAuthService";
-import type { AuthState, BiometricCapabilities } from "../../types/auth";
 
 interface SecurityData {
 	twoFactorEnabled: boolean;
@@ -36,14 +46,15 @@ export function SecuritySettings() {
 	});
 
 	const [authData, setAuthData] = useState<AuthenticationData>({
-			pinEnabled: false,
-			biometricEnabled: false,
-			autoLockEnabled: true,
-			lastAuthActivity: new Date().toISOString(),
-		});
+		pinEnabled: false,
+		biometricEnabled: false,
+		autoLockEnabled: true,
+		lastAuthActivity: new Date().toISOString(),
+	});
 
 	const [authState, setAuthState] = useState<AuthState | null>(null);
-	const [biometricCapabilities, setBiometricCapabilities] = useState<BiometricCapabilities | null>(null);
+	const [biometricCapabilities, setBiometricCapabilities] =
+		useState<BiometricCapabilities | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
 
 	const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -67,7 +78,7 @@ export function SecuritySettings() {
 				setAuthState(state);
 
 				// Update auth data based on current state
-				setAuthData(prev => ({
+				setAuthData((prev) => ({
 					...prev,
 					pinEnabled: state.config.pinEnabled,
 					biometricEnabled: state.config.biometricEnabled,
@@ -78,7 +89,7 @@ export function SecuritySettings() {
 				const capabilities = await biometricAuthService.getCapabilities();
 				setBiometricCapabilities(capabilities);
 			} catch (error) {
-				console.error('Failed to load auth state:', error);
+				console.error("Failed to load auth state:", error);
 				toast({
 					title: "Error",
 					description: "Failed to load authentication settings",
@@ -92,8 +103,11 @@ export function SecuritySettings() {
 		loadAuthState();
 	}, [initialize, getAuthState, toast]);
 
-	const handleSecurityUpdate = (field: keyof SecurityData, value: boolean | number) => {
-		setSecurityData(prev => ({ ...prev, [field]: value }));
+	const handleSecurityUpdate = (
+		field: keyof SecurityData,
+		value: boolean | number,
+	) => {
+		setSecurityData((prev) => ({ ...prev, [field]: value }));
 		toast({
 			title: "Security Setting Updated",
 			description: `${field} has been updated successfully.`,
@@ -112,7 +126,7 @@ export function SecuritySettings() {
 		}
 
 		// Here you would typically validate and save the new password
-		console.log('Changing password...');
+		console.log("Changing password...");
 		toast({
 			title: "Password Changed",
 			description: "Your password has been updated successfully.",
@@ -123,17 +137,20 @@ export function SecuritySettings() {
 		setPasswords({ current: "", new: "", confirm: "" });
 	};
 
-	const handleAuthUpdate = async (field: keyof AuthenticationData, value: boolean | number) => {
+	const handleAuthUpdate = async (
+		field: keyof AuthenticationData,
+		value: boolean | number,
+	) => {
 		try {
 			setIsLoading(true);
-			
+
 			// Update local state
-			setAuthData(prev => ({ ...prev, [field]: value }));
+			setAuthData((prev) => ({ ...prev, [field]: value }));
 
 			// Update auth service configuration
 			if (authState) {
 				await updateConfig({
-					[field]: value
+					[field]: value,
 				});
 			}
 
@@ -142,32 +159,32 @@ export function SecuritySettings() {
 				description: `${field} has been updated successfully.`,
 			});
 		} catch (error) {
-			console.error('Failed to update auth setting:', error);
+			console.error("Failed to update auth setting:", error);
 			toast({
 				title: "Error",
 				description: "Failed to update authentication setting",
 				variant: "destructive",
 			});
 			// Revert local state on error
-			setAuthData(prev => ({ ...prev, [field]: !value }));
+			setAuthData((prev) => ({ ...prev, [field]: !value }));
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
-	const handleResetAuth = async (method: 'pin' | 'biometric') => {
+	const handleResetAuth = async (method: "pin" | "biometric") => {
 		try {
 			setIsLoading(true);
-			
+
 			// This would typically show a confirmation dialog first
-			if (method === 'pin') {
+			if (method === "pin") {
 				// Reset PIN authentication
 				await updateConfig({ pinEnabled: false });
-				setAuthData(prev => ({ ...prev, pinEnabled: false }));
+				setAuthData((prev) => ({ ...prev, pinEnabled: false }));
 			} else {
 				// Reset biometric authentication
 				await updateConfig({ biometricEnabled: false });
-				setAuthData(prev => ({ ...prev, biometricEnabled: false }));
+				setAuthData((prev) => ({ ...prev, biometricEnabled: false }));
 			}
 
 			toast({
@@ -175,7 +192,7 @@ export function SecuritySettings() {
 				description: `${method} authentication has been disabled.`,
 			});
 		} catch (error) {
-			console.error('Failed to reset auth:', error);
+			console.error("Failed to reset auth:", error);
 			toast({
 				title: "Error",
 				description: "Failed to reset authentication method",
@@ -187,12 +204,12 @@ export function SecuritySettings() {
 	};
 
 	const getBiometricTypeLabel = () => {
-		if (!biometricCapabilities?.available) return 'Biometric';
+		if (!biometricCapabilities?.available) return "Biometric";
 		const types = biometricCapabilities.supportedTypes;
-		if (types.includes('face')) return 'Face ID';
-		if (types.includes('fingerprint')) return 'Fingerprint';
-		if (types.includes('voice')) return 'Voice Recognition';
-		return 'Biometric';
+		if (types.includes("face")) return "Face ID";
+		if (types.includes("fingerprint")) return "Fingerprint";
+		if (types.includes("voice")) return "Voice Recognition";
+		return "Biometric";
 	};
 
 	return (
@@ -224,7 +241,12 @@ export function SecuritySettings() {
 									id="current-password"
 									type={showCurrentPassword ? "text" : "password"}
 									value={passwords.current}
-									onChange={(e) => setPasswords(prev => ({ ...prev, current: e.target.value }))}
+									onChange={(e) =>
+										setPasswords((prev) => ({
+											...prev,
+											current: e.target.value,
+										}))
+									}
 									placeholder="Enter current password"
 									required
 								/>
@@ -235,7 +257,11 @@ export function SecuritySettings() {
 									className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1"
 									onClick={() => setShowCurrentPassword(!showCurrentPassword)}
 								>
-									{showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+									{showCurrentPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
 								</Button>
 							</div>
 						</div>
@@ -247,7 +273,9 @@ export function SecuritySettings() {
 									id="new-password"
 									type={showNewPassword ? "text" : "password"}
 									value={passwords.new}
-									onChange={(e) => setPasswords(prev => ({ ...prev, new: e.target.value }))}
+									onChange={(e) =>
+										setPasswords((prev) => ({ ...prev, new: e.target.value }))
+									}
 									placeholder="Enter new password"
 									required
 								/>
@@ -258,7 +286,11 @@ export function SecuritySettings() {
 									className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1"
 									onClick={() => setShowNewPassword(!showNewPassword)}
 								>
-									{showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+									{showNewPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
 								</Button>
 							</div>
 						</div>
@@ -270,7 +302,12 @@ export function SecuritySettings() {
 									id="confirm-password"
 									type={showConfirmPassword ? "text" : "password"}
 									value={passwords.confirm}
-									onChange={(e) => setPasswords(prev => ({ ...prev, confirm: e.target.value }))}
+									onChange={(e) =>
+										setPasswords((prev) => ({
+											...prev,
+											confirm: e.target.value,
+										}))
+									}
 									placeholder="Confirm new password"
 									required
 								/>
@@ -281,7 +318,11 @@ export function SecuritySettings() {
 									className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1"
 									onClick={() => setShowConfirmPassword(!showConfirmPassword)}
 								>
-									{showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+									{showConfirmPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
 								</Button>
 							</div>
 						</div>
@@ -311,7 +352,9 @@ export function SecuritySettings() {
 						</div>
 						<Switch
 							checked={securityData.twoFactorEnabled}
-							onCheckedChange={(checked) => handleSecurityUpdate('twoFactorEnabled', checked)}
+							onCheckedChange={(checked) =>
+								handleSecurityUpdate("twoFactorEnabled", checked)
+							}
 						/>
 					</div>
 
@@ -324,7 +367,9 @@ export function SecuritySettings() {
 						</div>
 						<Switch
 							checked={securityData.loginNotifications}
-							onCheckedChange={(checked) => handleSecurityUpdate('loginNotifications', checked)}
+							onCheckedChange={(checked) =>
+								handleSecurityUpdate("loginNotifications", checked)
+							}
 						/>
 					</div>
 
@@ -336,7 +381,12 @@ export function SecuritySettings() {
 							min="5"
 							max="120"
 							value={securityData.sessionTimeout}
-							onChange={(e) => handleSecurityUpdate('sessionTimeout', Number.parseInt(e.target.value))}
+							onChange={(e) =>
+								handleSecurityUpdate(
+									"sessionTimeout",
+									Number.parseInt(e.target.value),
+								)
+							}
 							className="w-32"
 						/>
 						<p className="text-xs text-muted-foreground">
@@ -346,7 +396,8 @@ export function SecuritySettings() {
 
 					<div className="pt-4 border-t">
 						<p className="text-sm text-muted-foreground">
-							Password last changed: {new Date(securityData.passwordLastChanged).toLocaleDateString()}
+							Password last changed:{" "}
+							{new Date(securityData.passwordLastChanged).toLocaleDateString()}
 						</p>
 					</div>
 				</CardContent>
@@ -390,7 +441,9 @@ export function SecuritySettings() {
 								</Badge>
 								<Switch
 									checked={authData.pinEnabled}
-									onCheckedChange={(checked) => handleAuthUpdate('pinEnabled', checked)}
+									onCheckedChange={(checked) =>
+										handleAuthUpdate("pinEnabled", checked)
+									}
 									disabled={isLoading}
 								/>
 							</div>
@@ -401,13 +454,14 @@ export function SecuritySettings() {
 								<Button
 									variant="outline"
 									size="sm"
-									onClick={() => handleResetAuth('pin')}
+									onClick={() => handleResetAuth("pin")}
 									disabled={isLoading}
 								>
 									Change PIN
 								</Button>
 								<p className="text-xs text-muted-foreground">
-									Last used: {new Date(authData.lastAuthActivity).toLocaleDateString()}
+									Last used:{" "}
+									{new Date(authData.lastAuthActivity).toLocaleDateString()}
 								</p>
 							</div>
 						)}
@@ -421,35 +475,37 @@ export function SecuritySettings() {
 									<Fingerprint className="h-4 w-4 text-primary" />
 								</div>
 								<div>
-									<h4 className="font-medium">{getBiometricTypeLabel()} Authentication</h4>
+									<h4 className="font-medium">
+										{getBiometricTypeLabel()} Authentication
+									</h4>
 									<p className="text-sm text-muted-foreground">
-										{biometricCapabilities?.available 
+										{biometricCapabilities?.available
 											? "Use your biometric data for secure access"
-											: "Not available on this device"
-										}
+											: "Not available on this device"}
 									</p>
 								</div>
 							</div>
 							<div className="flex items-center gap-2">
-								<Badge 
+								<Badge
 									variant={
-										!biometricCapabilities?.available 
-											? "outline" 
-											: authData.biometricEnabled 
-												? "default" 
+										!biometricCapabilities?.available
+											? "outline"
+											: authData.biometricEnabled
+												? "default"
 												: "secondary"
 									}
 								>
-									{!biometricCapabilities?.available 
-										? "Unavailable" 
-										: authData.biometricEnabled 
-											? "Enabled" 
-											: "Disabled"
-									}
+									{!biometricCapabilities?.available
+										? "Unavailable"
+										: authData.biometricEnabled
+											? "Enabled"
+											: "Disabled"}
 								</Badge>
 								<Switch
 									checked={authData.biometricEnabled}
-									onCheckedChange={(checked) => handleAuthUpdate('biometricEnabled', checked)}
+									onCheckedChange={(checked) =>
+										handleAuthUpdate("biometricEnabled", checked)
+									}
 									disabled={isLoading || !biometricCapabilities?.available}
 								/>
 							</div>
@@ -459,7 +515,7 @@ export function SecuritySettings() {
 							<div className="ml-11 space-y-2">
 								<div className="flex items-center gap-2">
 									<Badge variant="outline" className="text-xs">
-										{biometricCapabilities.supportedTypes.join(', ')}
+										{biometricCapabilities.supportedTypes.join(", ")}
 									</Badge>
 									<Badge variant="outline" className="text-xs">
 										{biometricCapabilities.platform}
@@ -468,7 +524,7 @@ export function SecuritySettings() {
 								<Button
 									variant="outline"
 									size="sm"
-									onClick={() => handleResetAuth('biometric')}
+									onClick={() => handleResetAuth("biometric")}
 									disabled={isLoading}
 								>
 									Reset Biometric
@@ -488,17 +544,20 @@ export function SecuritySettings() {
 							</div>
 							<Switch
 								checked={authData.autoLockEnabled}
-								onCheckedChange={(checked) => handleAuthUpdate('autoLockEnabled', checked)}
+								onCheckedChange={(checked) =>
+									handleAuthUpdate("autoLockEnabled", checked)
+								}
 								disabled={isLoading}
 							/>
 						</div>
 
 						{/* Security Notice */}
-						{(!authData.pinEnabled && !authData.biometricEnabled) && (
+						{!authData.pinEnabled && !authData.biometricEnabled && (
 							<Alert>
 								<AlertTriangle className="h-4 w-4" />
 								<AlertDescription>
-									No authentication methods are currently enabled. Your financial data may be at risk.
+									No authentication methods are currently enabled. Your
+									financial data may be at risk.
 								</AlertDescription>
 							</Alert>
 						)}

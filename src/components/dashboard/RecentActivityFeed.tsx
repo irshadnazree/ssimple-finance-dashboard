@@ -1,18 +1,24 @@
-import { Clock, ArrowUpRight, ArrowDownLeft, RefreshCw, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Link } from "@tanstack/react-router";
+import {
+	AlertCircle,
+	ArrowDownLeft,
+	ArrowUpRight,
+	Clock,
+	RefreshCw,
+} from "lucide-react";
+import type { Transaction } from "../../types/finance";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Link } from "@tanstack/react-router";
-import type { Transaction } from "../../types/finance";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 interface ActivityItem {
 	id: string;
-	type: 'transaction' | 'sync' | 'report' | 'alert';
+	type: "transaction" | "sync" | "report" | "alert";
 	title: string;
 	description: string;
 	timestamp: Date;
 	amount?: number;
-	status?: 'completed' | 'pending' | 'failed' | 'cancelled';
+	status?: "completed" | "pending" | "failed" | "cancelled";
 	category?: string;
 	account?: string;
 }
@@ -23,42 +29,44 @@ interface RecentActivityFeedProps {
 	maxItems?: number;
 }
 
-export function RecentActivityFeed({ 
-	className = "", 
-	recentTransactions = [], 
-	maxItems = 8 
+export function RecentActivityFeed({
+	className = "",
+	recentTransactions = [],
+	maxItems = 8,
 }: RecentActivityFeedProps) {
 	// Convert transactions to activity items and add mock system activities
-	const transactionActivities: ActivityItem[] = recentTransactions.slice(0, maxItems - 2).map(transaction => ({
-		id: transaction.id,
-		type: 'transaction',
-		title: transaction.description,
-		description: `${transaction.type === 'income' ? 'Income' : 'Expense'} • ${transaction.category}`,
-		timestamp: transaction.date,
-		amount: transaction.amount,
-		status: transaction.status,
-		category: transaction.category,
-		account: transaction.account
-	}));
+	const transactionActivities: ActivityItem[] = recentTransactions
+		.slice(0, maxItems - 2)
+		.map((transaction) => ({
+			id: transaction.id,
+			type: "transaction",
+			title: transaction.description,
+			description: `${transaction.type === "income" ? "Income" : "Expense"} • ${transaction.category}`,
+			timestamp: transaction.date,
+			amount: transaction.amount,
+			status: transaction.status,
+			category: transaction.category,
+			account: transaction.account,
+		}));
 
 	// Add some mock system activities for demonstration
 	const systemActivities: ActivityItem[] = [
 		{
-			id: 'sync-1',
-			type: 'sync',
-			title: 'Google Drive Sync',
-			description: 'Data synchronized successfully',
+			id: "sync-1",
+			type: "sync",
+			title: "Google Drive Sync",
+			description: "Data synchronized successfully",
 			timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-			status: 'completed'
+			status: "completed",
 		},
 		{
-			id: 'report-1',
-			type: 'report',
-			title: 'Monthly Report Generated',
-			description: 'Financial summary for current month',
+			id: "report-1",
+			type: "report",
+			title: "Monthly Report Generated",
+			description: "Financial summary for current month",
 			timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-			status: 'completed'
-		}
+			status: "completed",
+		},
 	];
 
 	// Combine and sort activities by timestamp
@@ -66,27 +74,31 @@ export function RecentActivityFeed({
 		.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
 		.slice(0, maxItems);
 
-	const getActivityIcon = (type: ActivityItem['type'], amount?: number) => {
+	const getActivityIcon = (type: ActivityItem["type"], amount?: number) => {
 		switch (type) {
-			case 'transaction':
+			case "transaction":
 				return amount && amount > 0 ? ArrowDownLeft : ArrowUpRight;
-			case 'sync':
+			case "sync":
 				return RefreshCw;
-			case 'report':
+			case "report":
 				return Clock;
-			case 'alert':
+			case "alert":
 				return AlertCircle;
 			default:
 				return Clock;
 		}
 	};
 
-	const getStatusColor = (status?: ActivityItem['status']) => {
+	const getStatusColor = (status?: ActivityItem["status"]) => {
 		switch (status) {
-			case 'completed': return 'text-green-600';
-			case 'pending': return 'text-yellow-600';
-			case 'failed': return 'text-red-600';
-			default: return 'text-muted-foreground';
+			case "completed":
+				return "text-green-600";
+			case "pending":
+				return "text-yellow-600";
+			case "failed":
+				return "text-red-600";
+			default:
+				return "text-muted-foreground";
 		}
 	};
 
@@ -94,8 +106,8 @@ export function RecentActivityFeed({
 		const isIncome = amount > 0;
 		const absAmount = Math.abs(amount);
 		return {
-			formatted: `${isIncome ? '+' : '-'}$${absAmount.toFixed(2)}`,
-			color: isIncome ? 'text-green-600' : 'text-red-600'
+			formatted: `${isIncome ? "+" : "-"}$${absAmount.toFixed(2)}`,
+			color: isIncome ? "text-green-600" : "text-red-600",
 		};
 	};
 
@@ -136,9 +148,7 @@ export function RecentActivityFeed({
 						</div>
 					</div>
 					<Button variant="outline" size="sm" asChild>
-						<Link to="/transactions">
-							View All
-						</Link>
+						<Link to="/transactions">View All</Link>
 					</Button>
 				</div>
 			</CardHeader>
@@ -147,27 +157,42 @@ export function RecentActivityFeed({
 					<div className="text-center py-8 text-muted-foreground">
 						<Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
 						<p className="text-sm">No recent activity</p>
-						<p className="text-xs">Your financial activities will appear here</p>
+						<p className="text-xs">
+							Your financial activities will appear here
+						</p>
 					</div>
 				) : (
 					<div className="space-y-3">
 						{allActivities.map((activity, index) => {
 							const Icon = getActivityIcon(activity.type, activity.amount);
-							const amountInfo = activity.amount ? formatAmount(activity.amount) : null;
+							const amountInfo = activity.amount
+								? formatAmount(activity.amount)
+								: null;
 
 							return (
-								<div key={activity.id} className="flex items-start gap-3 p-3 rounded-lg bg-background/50 hover:bg-background/80 transition-colors">
-									<div className={`p-2 rounded-full ${getStatusColor(activity.status)} bg-current/10`}>
+								<div
+									key={activity.id}
+									className="flex items-start gap-3 p-3 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
+								>
+									<div
+										className={`p-2 rounded-full ${getStatusColor(activity.status)} bg-current/10`}
+									>
 										<Icon className="h-3 w-3" />
 									</div>
 									<div className="flex-1 min-w-0">
 										<div className="flex items-start justify-between gap-2">
 											<div className="flex-1 min-w-0">
-												<p className="font-medium text-sm truncate">{activity.title}</p>
-												<p className="text-xs text-muted-foreground truncate">{activity.description}</p>
+												<p className="font-medium text-sm truncate">
+													{activity.title}
+												</p>
+												<p className="text-xs text-muted-foreground truncate">
+													{activity.description}
+												</p>
 											</div>
 											{amountInfo && (
-												<span className={`text-sm font-medium ${amountInfo.color}`}>
+												<span
+													className={`text-sm font-medium ${amountInfo.color}`}
+												>
 													{amountInfo.formatted}
 												</span>
 											)}
@@ -177,7 +202,10 @@ export function RecentActivityFeed({
 												{formatTimestamp(activity.timestamp)}
 											</span>
 											{activity.status && (
-												<Badge variant="outline" className={`text-xs ${getStatusColor(activity.status)}`}>
+												<Badge
+													variant="outline"
+													className={`text-xs ${getStatusColor(activity.status)}`}
+												>
 													{activity.status}
 												</Badge>
 											)}
