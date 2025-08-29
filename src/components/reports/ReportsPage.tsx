@@ -13,7 +13,9 @@ import {
 	usePerformanceMonitor,
 	useReportPerformance,
 } from "../../lib/hooks/useReportPerformance";
+import { useToast } from "../../lib/hooks/useToast";
 import { reportsService } from "../../lib/reports/reportsService";
+import { ErrorHandler } from "../../lib/utils/errorHandler";
 import type {
 	AccountPerformanceReport,
 	CashFlowReport,
@@ -202,6 +204,9 @@ export function ReportsPage({ className }: ReportsPageProps) {
 	const { renderTime, renderCount, logPerformance } =
 		usePerformanceMonitor("ReportsPage");
 
+	// Toast notifications
+	const { toast } = useToast();
+
 	// Performance optimization hooks
 	const {
 		isLoading: isFilterLoading,
@@ -297,9 +302,11 @@ export function ReportsPage({ className }: ReportsPageProps) {
 			setAccountPerformance(account);
 			setCashFlow(cash);
 		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : "Failed to generate reports",
-			);
+			const userError = ErrorHandler.handleError(err, {
+				component: "ReportsPage",
+				action: "generateReports",
+			});
+			setError(userError.message);
 		} finally {
 			isLoadingRef.current = false;
 			setIsLoading(false);
@@ -322,7 +329,16 @@ export function ReportsPage({ className }: ReportsPageProps) {
 			setIsLoading(true);
 			await reportsService.exportReport(financialSummary, format);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to export report");
+			const userError = ErrorHandler.handleError(err, {
+				component: "ReportsPage",
+				action: "exportReport",
+			});
+			setError(userError.message);
+			toast({
+				title: userError.title,
+				description: userError.message,
+				variant: "destructive",
+			});
 		} finally {
 			setIsLoading(false);
 		}

@@ -60,6 +60,20 @@ import { DatabaseService, db } from "../database/db";
 import { CryptoUtils, type FinancialData } from "../encryption/crypto";
 import { DataTransformUtils } from "../transactions/dataTransform";
 
+// Type guards for safe type checking
+function isTransaction(data: unknown): data is Transaction {
+	return (
+		typeof data === "object" &&
+		data !== null &&
+		"id" in data &&
+		"amount" in data &&
+		"description" in data &&
+		"type" in data
+	);
+}
+
+
+
 export interface SyncData {
 	transactions: ExternalTransactionFormat[]; // Use external format for backups
 	accounts: Account[];
@@ -437,11 +451,25 @@ export class GoogleDriveSync {
 				return t.Date === localTx.Date && t.Description === localTx.Description;
 			});
 			if (cloudTx && JSON.stringify(localTx) !== JSON.stringify(cloudTx)) {
+				// Convert external format to internal for conflict comparison
+				const localInternal = DataTransformUtils.fromExternalFormat(localTx);
+				const cloudInternal = DataTransformUtils.fromExternalFormat(cloudTx);
+
 				conflicts.push({
 					id: `transaction-${localTx.Date}-${localTx.Description}`,
 					type: "transaction",
-					localData: localTx as unknown as Transaction | Account | Category,
-					cloudData: cloudTx as unknown as Transaction | Account | Category,
+					localData: {
+						...localInternal,
+						id: crypto.randomUUID(),
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					} as Transaction,
+					cloudData: {
+						...cloudInternal,
+						id: crypto.randomUUID(),
+						createdAt: new Date(),
+						updatedAt: new Date(),
+					} as Transaction,
 					conflictDate: new Date(),
 					resolved: false,
 				});
@@ -514,7 +542,7 @@ export class GoogleDriveSync {
 	private async mergeData(
 		localData: SyncData,
 		cloudData: SyncData,
-		conflicts: DataConflict[],
+		_conflicts: DataConflict[],
 	): Promise<void> {
 		// Merge transactions (cloud takes precedence for conflicts)
 		const mergedTransactions = [...localData.transactions];
@@ -605,10 +633,14 @@ export class GoogleDriveSync {
 			// Apply the resolution based on conflict type
 			switch (conflict.type) {
 				case "transaction": {
-					// Convert external format to internal if needed
-					const internalTx = DataTransformUtils.fromExternalFormat(
-						dataToUse as unknown as ExternalTransactionFormat,
-					);
+					// Validate that dataToUse is a Transaction
+					if (!isTransaction(dataToUse)) {
+						throw new Error(
+							`Invalid transaction data for conflict ${conflictId}`,
+						);
+					}
+
+					const internalTx = dataToUse;
 					const fullTx: Transaction = {
 						...internalTx,
 						id: crypto.randomUUID(),

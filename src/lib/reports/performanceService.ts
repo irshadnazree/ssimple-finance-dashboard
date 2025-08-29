@@ -18,11 +18,6 @@ class ReportCache {
 	private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 	private readonly MAX_CACHE_SIZE = 100;
 
-	// Generate cache key from filters and parameters
-	private generateKey(prefix: string, params: unknown): string {
-		return `${prefix}_${JSON.stringify(params)}`;
-	}
-
 	// Set cache entry
 	set<T>(key: string, data: T, ttl = this.DEFAULT_TTL): void {
 		// Remove oldest entries if cache is full
@@ -426,4 +421,4 @@ export const ReportPerformanceService = {
 // Initialize the service
 initializePerformanceService();
 
-export { debounce, LazyLoader, PerformanceMonitor, QueryOptimizer };
+// Removed unused exports: debounce, LazyLoader, PerformanceMonitor, QueryOptimizer

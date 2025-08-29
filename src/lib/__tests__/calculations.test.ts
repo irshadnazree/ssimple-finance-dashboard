@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Account, Budget, Transaction } from "../../types/finance";
+import type { Account, Transaction } from "../../types/finance";
 import { FinanceCalculations, ValidationUtils } from "../calculations/finance";
 
 describe("FinanceCalculations", () => {

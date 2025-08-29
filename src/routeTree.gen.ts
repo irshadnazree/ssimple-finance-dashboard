@@ -8,106 +8,106 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as TransactionsRouteImport } from './routes/transactions'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as ReportsRouteImport } from "./routes/reports";
+import { Route as SettingsRouteImport } from "./routes/settings";
+import { Route as TransactionsRouteImport } from "./routes/transactions";
 
 const TransactionsRoute = TransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/transactions",
+	path: "/transactions",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/settings",
+	path: "/settings",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/reports",
+	path: "/reports",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/",
+	path: "/",
+	getParentRoute: () => rootRouteImport,
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/reports': typeof ReportsRoute
-  '/settings': typeof SettingsRoute
-  '/transactions': typeof TransactionsRoute
+	"/": typeof IndexRoute;
+	"/reports": typeof ReportsRoute;
+	"/settings": typeof SettingsRoute;
+	"/transactions": typeof TransactionsRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/reports': typeof ReportsRoute
-  '/settings': typeof SettingsRoute
-  '/transactions': typeof TransactionsRoute
+	"/": typeof IndexRoute;
+	"/reports": typeof ReportsRoute;
+	"/settings": typeof SettingsRoute;
+	"/transactions": typeof TransactionsRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/reports': typeof ReportsRoute
-  '/settings': typeof SettingsRoute
-  '/transactions': typeof TransactionsRoute
+	__root__: typeof rootRouteImport;
+	"/": typeof IndexRoute;
+	"/reports": typeof ReportsRoute;
+	"/settings": typeof SettingsRoute;
+	"/transactions": typeof TransactionsRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/reports' | '/settings' | '/transactions'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/reports' | '/settings' | '/transactions'
-  id: '__root__' | '/' | '/reports' | '/settings' | '/transactions'
-  fileRoutesById: FileRoutesById
+	fileRoutesByFullPath: FileRoutesByFullPath;
+	fullPaths: "/" | "/reports" | "/settings" | "/transactions";
+	fileRoutesByTo: FileRoutesByTo;
+	to: "/" | "/reports" | "/settings" | "/transactions";
+	id: "__root__" | "/" | "/reports" | "/settings" | "/transactions";
+	fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ReportsRoute: typeof ReportsRoute
-  SettingsRoute: typeof SettingsRoute
-  TransactionsRoute: typeof TransactionsRoute
+	IndexRoute: typeof IndexRoute;
+	ReportsRoute: typeof ReportsRoute;
+	SettingsRoute: typeof SettingsRoute;
+	TransactionsRoute: typeof TransactionsRoute;
 }
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/transactions': {
-      id: '/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof TransactionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-  }
+declare module "@tanstack/react-router" {
+	interface FileRoutesByPath {
+		"/transactions": {
+			id: "/transactions";
+			path: "/transactions";
+			fullPath: "/transactions";
+			preLoaderRoute: typeof TransactionsRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/settings": {
+			id: "/settings";
+			path: "/settings";
+			fullPath: "/settings";
+			preLoaderRoute: typeof SettingsRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/reports": {
+			id: "/reports";
+			path: "/reports";
+			fullPath: "/reports";
+			preLoaderRoute: typeof ReportsRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/": {
+			id: "/";
+			path: "/";
+			fullPath: "/";
+			preLoaderRoute: typeof IndexRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+	}
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  ReportsRoute: ReportsRoute,
-  SettingsRoute: SettingsRoute,
-  TransactionsRoute: TransactionsRoute,
-}
+	IndexRoute: IndexRoute,
+	ReportsRoute: ReportsRoute,
+	SettingsRoute: SettingsRoute,
+	TransactionsRoute: TransactionsRoute,
+};
 export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+	._addFileChildren(rootRouteChildren)
+	._addFileTypes<FileRouteTypes>();

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReportFilters, Transaction } from "../../types/finance";
 import { ReportPerformanceService } from "../reports/performanceService";
 

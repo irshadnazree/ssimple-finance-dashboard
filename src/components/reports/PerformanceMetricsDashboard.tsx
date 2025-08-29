@@ -1,16 +1,17 @@
 import {
-    AlertTriangle,
-    BarChart3,
-    CheckCircle,
-    DollarSign,
-    PieChart,
-    Target,
-    TrendingDown,
-    TrendingUp,
+	AlertTriangle,
+	BarChart3,
+	CheckCircle,
+	DollarSign,
+	PieChart,
+	Target,
+	TrendingDown,
+	TrendingUp,
 } from "lucide-react";
+import { memo } from "react";
 import type {
-    FinancialSummaryReport,
-    PerformanceMetrics,
+	FinancialSummaryReport,
+	PerformanceMetrics,
 } from "../../types/finance";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
@@ -29,7 +30,7 @@ interface MetricCardProps {
 	target?: number;
 }
 
-function MetricCard({
+const MetricCard = memo(function MetricCard({
 	title,
 	value,
 	change,
@@ -51,69 +52,78 @@ function MetricCard({
 		}
 	};
 
-	const getStatusIcon = () => {
-		switch (status) {
-			case "good":
-				return <CheckCircle className="h-4 w-4 text-green-600" />;
-			case "warning":
-				return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-			case "poor":
-				return <AlertTriangle className="h-4 w-4 text-red-600" />;
-			default:
-				return null;
-		}
-	};
-
-	const formatValue = (val: string | number): string => {
+	const formatValue = (val: string | number) => {
 		if (typeof val === "number") {
-			if (
-				title.includes("Rate") ||
-				title.includes("Ratio") ||
-				title.includes("Score")
-			) {
-				return `${val.toFixed(1)}%`;
-			}
-			return val.toLocaleString();
+			return val % 1 === 0 ? val.toString() : val.toFixed(1);
 		}
 		return val;
 	};
 
 	return (
-		<Card className={`border-l-4 ${getStatusColor()}`}>
-			<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-				<CardTitle className="text-sm font-medium">{title}</CardTitle>
-				<div className="flex items-center gap-2">
-					{getStatusIcon()}
-					{icon}
+		<Card className={`border-2 ${getStatusColor()}`}>
+			<CardHeader className="pb-2">
+				<div className="flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						{icon}
+						<span className="font-mono text-sm font-medium">{title}</span>
+					</div>
+					{target && (
+						<span className="text-xs text-muted-foreground">
+							Target: {target}%
+						</span>
+					)}
 				</div>
 			</CardHeader>
 			<CardContent>
-				<div className="text-2xl font-bold">{formatValue(value)}</div>
-				{change !== undefined && (
-					<div className="flex items-center text-xs text-muted-foreground mt-1">
-						{change >= 0 ? (
-							<TrendingUp className="h-3 w-3 text-green-600 mr-1" />
-						) : (
-							<TrendingDown className="h-3 w-3 text-red-600 mr-1" />
-						)}
-						<span className={change >= 0 ? "text-green-600" : "text-red-600"}>
-							{Math.abs(change).toFixed(1)}%
+				<div className="space-y-2">
+					<div className="flex items-baseline gap-2">
+						<span className="text-2xl font-bold">
+							{formatValue(value)}
+							{typeof value === "number" && "%"}
 						</span>
-						<span className="ml-1">from last period</span>
+						{change !== undefined && (
+							<span
+								className={`text-sm font-mono ${
+									change > 0
+										? "text-green-600"
+										: change < 0
+											? "text-red-600"
+											: "text-gray-600"
+								}`}
+							>
+								{change > 0 ? "+" : ""}
+								{change.toFixed(1)}%
+							</span>
+						)}
 					</div>
-				)}
-				{target !== undefined && (
-					<div className="text-xs text-muted-foreground mt-1">
-						Target: {target.toFixed(1)}%
-					</div>
-				)}
+					{target && (
+						<div className="w-full bg-gray-200 rounded-full h-2">
+							<div
+								className={`h-2 rounded-full transition-all duration-300 ${
+									status === "good"
+										? "bg-green-500"
+										: status === "warning"
+											? "bg-yellow-500"
+											: "bg-red-500"
+								}`}
+								style={{
+									width: `${Math.min((Number(value) / target) * 100, 100)}%`,
+								}}
+							/>
+						</div>
+					)}
+				</div>
 				<p className="text-xs text-muted-foreground mt-2">{description}</p>
 			</CardContent>
 		</Card>
 	);
-}
+});
 
-function HealthScoreGauge({ score }: { score: number }) {
+const HealthScoreGauge = memo(function HealthScoreGauge({
+	score,
+}: {
+	score: number;
+}) {
 	const getScoreColor = (score: number) => {
 		if (score >= 80) return "text-green-600";
 		if (score >= 60) return "text-yellow-600";
@@ -124,8 +134,12 @@ function HealthScoreGauge({ score }: { score: number }) {
 		if (score >= 80) return "Excellent";
 		if (score >= 60) return "Good";
 		if (score >= 40) return "Fair";
-		return "Poor";
+		return "Needs Improvement";
 	};
+
+	const circumference = 2 * Math.PI * 45;
+	const strokeDasharray = circumference;
+	const strokeDashoffset = circumference - (score / 100) * circumference;
 
 	return (
 		<Card>
@@ -135,47 +149,47 @@ function HealthScoreGauge({ score }: { score: number }) {
 					Financial Health Score
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="flex flex-col items-center">
-				<div className="relative w-32 h-32">
-					<svg
-						className="w-32 h-32 transform -rotate-90"
-						viewBox="0 0 120 120"
-						aria-label="Financial Health Score Gauge"
-					>
-						<title>Financial Health Score Gauge</title>
-						{/* Background circle */}
-						<circle
-							cx="60"
-							cy="60"
-							r="50"
-							fill="none"
-							stroke="#e5e7eb"
-							strokeWidth="8"
-						/>
-						{/* Progress circle */}
-						<circle
-							cx="60"
-							cy="60"
-							r="50"
-							fill="none"
-							stroke={
-								score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444"
-							}
-							strokeWidth="8"
-							strokeLinecap="round"
-							strokeDasharray={`${(score / 100) * 314} 314`}
-							className="transition-all duration-1000 ease-out"
-						/>
-					</svg>
-					<div className="absolute inset-0 flex flex-col items-center justify-center">
-						<span className={`text-2xl font-bold ${getScoreColor(score)}`}>
-							{score.toFixed(0)}
-						</span>
-						<span className="text-xs text-muted-foreground">out of 100</span>
+			<CardContent>
+				<div className="flex flex-col items-center space-y-4">
+					<div className="relative w-32 h-32">
+						<svg
+							className="w-32 h-32 transform -rotate-90"
+							viewBox="0 0 100 100"
+							aria-label="Financial Health Score Gauge"
+						>
+							<circle
+								cx="50"
+								cy="50"
+								r="45"
+								stroke="currentColor"
+								strokeWidth="8"
+								fill="transparent"
+								className="text-gray-200"
+							/>
+							<circle
+								cx="50"
+								cy="50"
+								r="45"
+								stroke="currentColor"
+								strokeWidth="8"
+								fill="transparent"
+								strokeDasharray={strokeDasharray}
+								strokeDashoffset={strokeDashoffset}
+								strokeLinecap="round"
+								className={`transition-all duration-1000 ease-out ${
+									score >= 80
+										? "text-green-500"
+										: score >= 60
+											? "text-yellow-500"
+											: "text-red-500"
+								}`}
+							/>
+						</svg>
+						<div className="absolute inset-0 flex items-center justify-center">
+							<span className="text-2xl font-bold">{score}</span>
+						</div>
 					</div>
-				</div>
-				<div className="text-center mt-4">
-					<p className={`font-medium ${getScoreColor(score)}`}>
+					<p className={`text-lg font-semibold ${getScoreColor(score)}`}>
 						{getScoreLabel(score)}
 					</p>
 					<p className="text-xs text-muted-foreground mt-1">
@@ -185,59 +199,68 @@ function HealthScoreGauge({ score }: { score: number }) {
 			</CardContent>
 		</Card>
 	);
-}
+});
 
-function QuickInsights({
+const QuickInsights = memo(function QuickInsights({
 	metrics,
 	financialSummary: _financialSummary,
 }: PerformanceMetricsDashboardProps) {
 	const insights = [];
 
 	// Savings rate insights
-	if (metrics.savingsRate < 10) {
+	if (metrics.savingsRate >= 20) {
 		insights.push({
-			type: "warning" as const,
-			title: "Low Savings Rate",
-			message: `Your savings rate of ${metrics.savingsRate.toFixed(1)}% is below the recommended 20%. Consider reducing expenses or increasing income.`,
+			type: "positive",
+			message:
+				"Excellent savings rate! You're on track for financial security.",
 		});
-	} else if (metrics.savingsRate >= 20) {
+	} else if (metrics.savingsRate >= 10) {
 		insights.push({
-			type: "good" as const,
-			title: "Excellent Savings Rate",
-			message: `Your savings rate of ${metrics.savingsRate.toFixed(1)}% exceeds the recommended 20%. Great job!`,
+			type: "warning",
+			message:
+				"Good savings rate, but consider increasing to 20% for better security.",
+		});
+	} else {
+		insights.push({
+			type: "negative",
+			message: "Low savings rate. Try to save at least 10% of your income.",
 		});
 	}
 
 	// Expense ratio insights
-	if (metrics.expenseRatio > 80) {
+	if (metrics.expenseRatio <= 70) {
 		insights.push({
-			type: "warning" as const,
-			title: "High Expense Ratio",
-			message: `${metrics.expenseRatio.toFixed(1)}% of your income goes to expenses. Look for areas to cut back.`,
+			type: "positive",
+			message: "Great expense control! You're living well within your means.",
+		});
+	} else if (metrics.expenseRatio <= 85) {
+		insights.push({
+			type: "warning",
+			message: "Moderate expenses. Look for areas to optimize spending.",
+		});
+	} else {
+		insights.push({
+			type: "negative",
+			message: "High expense ratio. Consider reducing discretionary spending.",
 		});
 	}
 
 	// Income growth insights
-	if (metrics.incomeGrowthRate > 5) {
+	if (metrics.incomeGrowthRate >= 5) {
 		insights.push({
-			type: "good" as const,
-			title: "Strong Income Growth",
-			message: `Your income has grown by ${metrics.incomeGrowthRate.toFixed(1)}% - consider increasing your savings rate.`,
+			type: "positive",
+			message: "Strong income growth! Your earning power is increasing.",
 		});
-	} else if (metrics.incomeGrowthRate < 0) {
+	} else if (metrics.incomeGrowthRate >= 0) {
 		insights.push({
-			type: "warning" as const,
-			title: "Declining Income",
-			message: `Your income has decreased by ${Math.abs(metrics.incomeGrowthRate).toFixed(1)}%. Focus on expense management.`,
+			type: "warning",
+			message: "Stable income. Consider opportunities for growth.",
 		});
-	}
-
-	if (insights.length === 0) {
+	} else {
 		insights.push({
-			type: "good" as const,
-			title: "Stable Financial Position",
+			type: "negative",
 			message:
-				"Your financial metrics are within healthy ranges. Keep up the good work!",
+				"Declining income. Focus on career development or additional income sources.",
 		});
 	}
 
@@ -245,175 +268,178 @@ function QuickInsights({
 		<Card>
 			<CardHeader>
 				<CardTitle className="flex items-center gap-2">
-					<BarChart3 className="h-5 w-5" />
+					<AlertTriangle className="h-5 w-5" />
 					Quick Insights
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="space-y-4">
-				{insights.slice(0, 3).map((insight, index) => (
-					<div
-						key={`${insight.type}-${insight.title}-${index}`}
-						className="flex gap-3"
-					>
-						<div className="flex-shrink-0 mt-1">
-							{insight.type === "good" ? (
-								<CheckCircle className="h-4 w-4 text-green-600" />
-							) : (
-								<AlertTriangle className="h-4 w-4 text-yellow-600" />
-							)}
+			<CardContent>
+				<div className="space-y-3">
+					{insights.map((insight, index) => (
+						<div
+							key={`${insight.type}-${insight.message.slice(0, 20)}-${index}`}
+							className={`p-3 rounded-lg border-l-4 ${
+								insight.type === "positive"
+									? "bg-green-50 border-green-400 text-green-800"
+									: insight.type === "warning"
+										? "bg-yellow-50 border-yellow-400 text-yellow-800"
+										: "bg-red-50 border-red-400 text-red-800"
+							}`}
+						>
+							<p className="text-sm font-medium">{insight.message}</p>
 						</div>
-						<div>
-							<p className="font-medium text-sm">{insight.title}</p>
-							<p className="text-xs text-muted-foreground">{insight.message}</p>
-						</div>
-					</div>
-				))}
+					))}
+				</div>
 			</CardContent>
 		</Card>
 	);
-}
+});
 
-export function PerformanceMetricsDashboard({
-	metrics,
-	financialSummary,
-}: PerformanceMetricsDashboardProps) {
-	const getMetricStatus = (
-		value: number,
-		thresholds: { good: number; warning: number },
-	): "good" | "warning" | "poor" => {
-		if (value >= thresholds.good) return "good";
-		if (value >= thresholds.warning) return "warning";
-		return "poor";
-	};
+export const PerformanceMetricsDashboard = memo(
+	function PerformanceMetricsDashboard({
+		metrics,
+		financialSummary,
+	}: PerformanceMetricsDashboardProps) {
+		const getMetricStatus = (
+			value: number,
+			thresholds: { good: number; warning: number },
+		): "good" | "warning" | "poor" => {
+			if (value >= thresholds.good) return "good";
+			if (value >= thresholds.warning) return "warning";
+			return "poor";
+		};
 
-	const getSavingsRateStatus = () =>
-		getMetricStatus(metrics.savingsRate, { good: 20, warning: 10 });
-	const getExpenseRatioStatus = () => {
-		// Lower is better for expense ratio
-		if (metrics.expenseRatio <= 70) return "good";
-		if (metrics.expenseRatio <= 85) return "warning";
-		return "poor";
-	};
-	const getIncomeGrowthStatus = () =>
-		getMetricStatus(metrics.incomeGrowthRate, { good: 3, warning: 0 });
+		const getSavingsRateStatus = () =>
+			getMetricStatus(metrics.savingsRate, { good: 20, warning: 10 });
+		const getExpenseRatioStatus = () => {
+			// Lower is better for expense ratio
+			if (metrics.expenseRatio <= 70) return "good";
+			if (metrics.expenseRatio <= 85) return "warning";
+			return "poor";
+		};
+		const getIncomeGrowthStatus = () =>
+			getMetricStatus(metrics.incomeGrowthRate, { good: 3, warning: 0 });
 
-	return (
-		<div className="space-y-6">
-			{/* Key Metrics Grid */}
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-				<MetricCard
-					title="Savings Rate"
-					value={metrics.savingsRate}
-					change={metrics.incomeGrowthRate - metrics.expenseGrowthRate}
-					icon={<DollarSign className="h-4 w-4" />}
-					description="Percentage of income saved"
-					status={getSavingsRateStatus()}
-					target={20}
-				/>
-				<MetricCard
-					title="Expense Ratio"
-					value={metrics.expenseRatio}
-					change={metrics.expenseGrowthRate}
-					icon={<PieChart className="h-4 w-4" />}
-					description="Percentage of income spent"
-					status={getExpenseRatioStatus()}
-					target={70}
-				/>
-				<MetricCard
-					title="Income Growth"
-					value={metrics.incomeGrowthRate}
-					icon={<TrendingUp className="h-4 w-4" />}
-					description="Year-over-year income change"
-					status={getIncomeGrowthStatus()}
-					target={5}
-				/>
-				<MetricCard
-					title="Expense Growth"
-					value={metrics.expenseGrowthRate}
-					icon={<TrendingDown className="h-4 w-4" />}
-					description="Year-over-year expense change"
-					status={
-						metrics.expenseGrowthRate <= 3
-							? "good"
-							: metrics.expenseGrowthRate <= 7
-								? "warning"
-								: "poor"
-					}
-					target={3}
-				/>
-			</div>
-
-			{/* Additional Metrics (if available) */}
-			{(metrics.budgetAdherence !== undefined ||
-				metrics.debtToIncomeRatio !== undefined ||
-				metrics.emergencyFundRatio !== undefined ||
-				metrics.investmentAllocation !== undefined) && (
+		return (
+			<div className="space-y-6">
+				{/* Key Metrics Grid */}
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					{metrics.budgetAdherence !== undefined && (
-						<MetricCard
-							title="Budget Adherence"
-							value={metrics.budgetAdherence}
-							icon={<Target className="h-4 w-4" />}
-							description="How well you stick to your budget"
-							status={getMetricStatus(metrics.budgetAdherence, {
-								good: 90,
-								warning: 75,
-							})}
-							target={95}
-						/>
-					)}
-					{metrics.debtToIncomeRatio !== undefined && (
-						<MetricCard
-							title="Debt-to-Income"
-							value={metrics.debtToIncomeRatio}
-							icon={<AlertTriangle className="h-4 w-4" />}
-							description="Debt payments as % of income"
-							status={
-								metrics.debtToIncomeRatio <= 20
-									? "good"
-									: metrics.debtToIncomeRatio <= 36
-										? "warning"
-										: "poor"
-							}
-							target={20}
-						/>
-					)}
-					{metrics.emergencyFundRatio !== undefined && (
-						<MetricCard
-							title="Emergency Fund"
-							value={metrics.emergencyFundRatio}
-							icon={<CheckCircle className="h-4 w-4" />}
-							description="Months of expenses covered"
-							status={getMetricStatus(metrics.emergencyFundRatio, {
-								good: 6,
-								warning: 3,
-							})}
-							target={6}
-						/>
-					)}
-					{metrics.investmentAllocation !== undefined && (
-						<MetricCard
-							title="Investment Allocation"
-							value={metrics.investmentAllocation}
-							icon={<BarChart3 className="h-4 w-4" />}
-							description="% of portfolio in investments"
-							status={getMetricStatus(metrics.investmentAllocation, {
-								good: 60,
-								warning: 30,
-							})}
-							target={70}
-						/>
-					)}
+					<MetricCard
+						title="Savings Rate"
+						value={metrics.savingsRate}
+						change={metrics.incomeGrowthRate - metrics.expenseGrowthRate}
+						icon={<DollarSign className="h-4 w-4" />}
+						description="Percentage of income saved"
+						status={getSavingsRateStatus()}
+						target={20}
+					/>
+					<MetricCard
+						title="Expense Ratio"
+						value={metrics.expenseRatio}
+						change={metrics.expenseGrowthRate}
+						icon={<PieChart className="h-4 w-4" />}
+						description="Percentage of income spent"
+						status={getExpenseRatioStatus()}
+						target={70}
+					/>
+					<MetricCard
+						title="Income Growth"
+						value={metrics.incomeGrowthRate}
+						icon={<TrendingUp className="h-4 w-4" />}
+						description="Year-over-year income change"
+						status={getIncomeGrowthStatus()}
+						target={5}
+					/>
+					<MetricCard
+						title="Expense Growth"
+						value={metrics.expenseGrowthRate}
+						icon={<TrendingDown className="h-4 w-4" />}
+						description="Year-over-year expense change"
+						status={
+							metrics.expenseGrowthRate <= 3
+								? "good"
+								: metrics.expenseGrowthRate <= 7
+									? "warning"
+									: "poor"
+						}
+						target={3}
+					/>
 				</div>
-			)}
 
-			{/* Health Score and Insights */}
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-				<HealthScoreGauge score={metrics.financialHealthScore} />
-				<QuickInsights metrics={metrics} financialSummary={financialSummary} />
+				{/* Additional Metrics (if available) */}
+				{(metrics.budgetAdherence !== undefined ||
+					metrics.debtToIncomeRatio !== undefined ||
+					metrics.emergencyFundRatio !== undefined ||
+					metrics.investmentAllocation !== undefined) && (
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+						{metrics.budgetAdherence !== undefined && (
+							<MetricCard
+								title="Budget Adherence"
+								value={metrics.budgetAdherence}
+								icon={<Target className="h-4 w-4" />}
+								description="How well you stick to your budget"
+								status={getMetricStatus(metrics.budgetAdherence, {
+									good: 90,
+									warning: 75,
+								})}
+								target={95}
+							/>
+						)}
+						{metrics.debtToIncomeRatio !== undefined && (
+							<MetricCard
+								title="Debt-to-Income"
+								value={metrics.debtToIncomeRatio}
+								icon={<AlertTriangle className="h-4 w-4" />}
+								description="Debt payments as % of income"
+								status={
+									metrics.debtToIncomeRatio <= 20
+										? "good"
+										: metrics.debtToIncomeRatio <= 36
+											? "warning"
+											: "poor"
+								}
+								target={20}
+							/>
+						)}
+						{metrics.emergencyFundRatio !== undefined && (
+							<MetricCard
+								title="Emergency Fund"
+								value={metrics.emergencyFundRatio}
+								icon={<CheckCircle className="h-4 w-4" />}
+								description="Months of expenses covered"
+								status={getMetricStatus(metrics.emergencyFundRatio, {
+									good: 6,
+									warning: 3,
+								})}
+								target={6}
+							/>
+						)}
+						{metrics.investmentAllocation !== undefined && (
+							<MetricCard
+								title="Investment Allocation"
+								value={metrics.investmentAllocation}
+								icon={<BarChart3 className="h-4 w-4" />}
+								description="% of portfolio in investments"
+								status={getMetricStatus(metrics.investmentAllocation, {
+									good: 60,
+									warning: 30,
+								})}
+								target={70}
+							/>
+						)}
+					</div>
+				)}
+
+				{/* Health Score and Insights */}
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					<HealthScoreGauge score={metrics.financialHealthScore} />
+					<QuickInsights
+						metrics={metrics}
+						financialSummary={financialSummary}
+					/>
+				</div>
 			</div>
-		</div>
-	);
-}
+		);
+	},
+);
 
 export default PerformanceMetricsDashboard;

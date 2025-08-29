@@ -4,19 +4,15 @@ import {
 	addWeeks,
 	addYears,
 	endOfMonth,
-	endOfWeek,
-	endOfYear,
 	isWithinInterval,
 	startOfMonth,
 	startOfWeek,
-	startOfYear,
 } from "date-fns";
 import type {
 	Account,
 	ChartDataPoint,
 	ChartTimeframe,
 	FinancialSummary,
-	RecurringTransaction,
 	Transaction,
 	ValidationError,
 } from "../../types/finance";
@@ -82,6 +78,68 @@ export namespace ValidationUtils {
 		return errors;
 	}
 
+	export function validateBudget(
+		budget: Partial<{
+			name: string;
+			category: string;
+			amount: number;
+			period: "daily" | "weekly" | "monthly" | "yearly";
+			startDate: Date;
+		}>,
+	): ValidationError[] {
+		const errors: ValidationError[] = [];
+
+		if (!budget.name || budget.name.trim().length === 0) {
+			errors.push({
+				field: "name",
+				message: "Budget name is required",
+				code: "NAME_REQUIRED",
+			});
+		}
+
+		if (!budget.category || budget.category.trim().length === 0) {
+			errors.push({
+				field: "category",
+				message: "Category is required",
+				code: "CATEGORY_REQUIRED",
+			});
+		}
+
+		if (!budget.amount || budget.amount <= 0) {
+			errors.push({
+				field: "amount",
+				message: "Amount is required and must be greater than 0",
+				code: "AMOUNT_REQUIRED",
+			});
+		}
+
+		if (budget.amount && budget.amount < 0) {
+			errors.push({
+				field: "amount",
+				message: "Amount must be positive",
+				code: "AMOUNT_POSITIVE",
+			});
+		}
+
+		if (!budget.period) {
+			errors.push({
+				field: "period",
+				message: "Budget period is required",
+				code: "PERIOD_REQUIRED",
+			});
+		}
+
+		if (!budget.startDate) {
+			errors.push({
+				field: "startDate",
+				message: "Start date is required",
+				code: "START_DATE_REQUIRED",
+			});
+		}
+
+		return errors;
+	}
+
 	export function validateAccount(
 		account: Partial<Account>,
 	): ValidationError[] {
@@ -131,16 +189,6 @@ export namespace ValidationUtils {
 
 	export function validateTransactionType(type: string): boolean {
 		return ["income", "expense"].includes(type);
-	}
-
-	export function validateBudgetPeriod(period: string): boolean {
-		return ["weekly", "monthly", "yearly"].includes(period);
-	}
-
-	export function validateAccountType(type: string): boolean {
-		return ["checking", "savings", "credit", "investment", "cash"].includes(
-			type,
-		);
 	}
 
 	export function validateCurrency(currency: string): boolean {
@@ -440,18 +488,19 @@ export namespace RecurringTransactions {
 
 		while (currentDate <= endDate && upcoming.length < 50) {
 			upcoming.push({
-				id: `${baseTransaction.id}-${currentDate.getTime()}`,
-				amount: baseTransaction.amount,
-				description: baseTransaction.description,
-				category: baseTransaction.category,
-				subcategory: baseTransaction.subcategory,
-				account: baseTransaction.account,
-				type: baseTransaction.type,
-				date: new Date(currentDate),
-				tags: baseTransaction.tags,
-				currency: baseTransaction.currency,
-				createdAt: new Date(),
-				updatedAt: new Date(),
+			id: `${baseTransaction.id}-${currentDate.getTime()}`,
+			amount: baseTransaction.amount,
+			description: baseTransaction.description,
+			category: baseTransaction.category,
+			subcategory: baseTransaction.subcategory,
+			account: baseTransaction.account,
+			type: baseTransaction.type,
+			date: new Date(currentDate),
+			tags: baseTransaction.tags,
+			currency: baseTransaction.currency,
+			status: baseTransaction.status || "pending",
+			createdAt: new Date(),
+			updatedAt: new Date(),
 			});
 
 			// Calculate next occurrence

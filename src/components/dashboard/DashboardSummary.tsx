@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ErrorHandler } from "../../lib/utils/errorHandler";
 import { useTransactionStore } from "../../stores/transactionStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { Transaction } from "../../types/finance";
@@ -6,6 +7,7 @@ import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
+import { CardSkeleton } from "../ui/skeleton";
 
 interface DashboardSummaryProps {
 	className?: string;
@@ -78,9 +80,11 @@ export default function DashboardSummary({
 				recentTransactions,
 			});
 		} catch (err) {
-			setError(
-				err instanceof Error ? err.message : "Failed to load dashboard data",
-			);
+			const userError = ErrorHandler.handleError(err, {
+				component: "DashboardSummary",
+				action: "loadData",
+			});
+			setError(userError.message);
 		} finally {
 			setLoading(false);
 		}
@@ -106,19 +110,30 @@ export default function DashboardSummary({
 
 	if (isLoading) {
 		return (
-			<Card className={className}>
-				<CardContent className="p-3 sm:p-6">
-					<div className="animate-pulse">
-						<div className="h-3 sm:h-4 bg-muted rounded w-1/4 mb-3 sm:mb-4" />
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-							{[1, 2, 3].map((i) => (
-								<div key={i} className="h-16 sm:h-20 bg-muted rounded" />
-							))}
-						</div>
-						<div className="h-24 sm:h-32 bg-muted rounded" />
+			<div className={`space-y-4 sm:space-y-6 lg:space-y-8 ${className}`}>
+				{/* Header skeleton */}
+				<div className="space-y-2">
+					<CardSkeleton className="h-6 w-48" />
+					<div className="h-px bg-gradient-to-r from-primary via-primary/50 to-transparent" />
+				</div>
+
+				{/* Summary cards skeleton */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+					{[1, 2, 3].map((i) => (
+						<CardSkeleton key={`summary-card-${i}`} className="h-24 sm:h-28" />
+					))}
+				</div>
+
+				{/* Recent transactions skeleton */}
+				<div className="space-y-3 sm:space-y-4">
+					<CardSkeleton className="h-6 w-40" />
+					<div className="space-y-2">
+						{[1, 2, 3, 4, 5].map((i) => (
+							<CardSkeleton key={`transaction-${i}`} className="h-16" />
+						))}
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+			</div>
 		);
 	}
 

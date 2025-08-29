@@ -14,24 +14,14 @@ import { TransactionOperationsToolbar } from "../components/transactions/Transac
 import { TransactionStatistics } from "../components/transactions/TransactionStatistics";
 import { TransactionSummary } from "../components/transactions/TransactionSummary";
 import { Alert, AlertDescription } from "../components/ui/alert";
-import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Select } from "../components/ui/select";
 import { useToast } from "../lib/hooks/useToast";
 import type {
 	TransactionFilters,
 	TransactionSummary as TransactionSummaryType,
 } from "../stores/transactionStore";
 import { useTransactionStore } from "../stores/transactionStore";
-import type { Account, Category, Transaction } from "../types/finance";
+import type { Transaction } from "../types/finance";
 
 export const Route = createFileRoute("/transactions")({
 	component: Transactions,
@@ -79,14 +69,14 @@ function Transactions() {
 	// Load initial data
 	useEffect(() => {
 		loadData();
-	}, []);
+	}, [loadData]);
 
 	// Real-time status update functionality
 	const updateTransactionStatus = useCallback(
 		async (
 			id: string,
 			status: Transaction["status"],
-			errorMessage?: string,
+			_errorMessage?: string,
 		) => {
 			try {
 				const updatedTransaction = await updateTransaction(id, { status });
@@ -166,7 +156,11 @@ function Transactions() {
 		}, 30000); // Check every 30 seconds
 
 		return () => clearInterval(interval);
-	}, [storeTransactions, updateTransaction]);
+	}, [
+		storeTransactions,
+		updateTransaction, // Reload data to get updated statuses
+		loadData,
+	]);
 
 	const applyFiltersAndSearch = useCallback(() => {
 		let filtered = [...storeTransactions];
@@ -439,9 +433,9 @@ function Transactions() {
 	};
 
 	// Pagination
-	const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+	const _totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
 	const startIndex = (currentPage - 1) * itemsPerPage;
-	const paginatedTransactions = filteredTransactions.slice(
+	const _paginatedTransactions = filteredTransactions.slice(
 		startIndex,
 		startIndex + itemsPerPage,
 	);

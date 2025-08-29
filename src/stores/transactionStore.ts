@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { ValidationUtils } from "../lib/calculations/finance";
 import { DatabaseService } from "../lib/database/db";
-import { DataTransformUtils } from "../lib/transactions/dataTransform";
+import { ErrorHandler } from "../lib/utils/errorHandler";
 import type {
 	Account,
 	Category,
@@ -170,10 +170,12 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
 			return newTransaction;
 		} catch (error: unknown) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			set({ error: errorMessage, isLoading: false });
-			throw error;
+			const userError = ErrorHandler.handleError(error, {
+				component: "TransactionStore",
+				action: "addTransaction",
+			});
+			set({ error: userError.message, isLoading: false });
+			throw userError;
 		}
 	},
 
@@ -203,10 +205,12 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
 			return updatedTransaction;
 		} catch (error: unknown) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			set({ error: errorMessage, isLoading: false });
-			throw error;
+			const userError = ErrorHandler.handleError(error, {
+				component: "TransactionStore",
+				action: "updateTransaction",
+			});
+			set({ error: userError.message, isLoading: false });
+			throw userError;
 		}
 	},
 
@@ -214,6 +218,12 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 		set({ isLoading: true, error: null });
 		try {
 			const state = get();
+			const transactionExists = state.transactions.some((t) => t.id === id);
+
+			if (!transactionExists) {
+				throw new Error("Transaction not found");
+			}
+
 			const updatedTransactions = state.transactions.filter((t) => t.id !== id);
 
 			set({
@@ -221,10 +231,12 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 				isLoading: false,
 			});
 		} catch (error: unknown) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
-			set({ error: errorMessage, isLoading: false });
-			throw error;
+			const userError = ErrorHandler.handleError(error, {
+				component: "TransactionStore",
+				action: "deleteTransaction",
+			});
+			set({ error: userError.message, isLoading: false });
+			throw userError;
 		}
 	},
 
@@ -544,7 +556,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 		return transactions.filter((t) => t.date >= startDate && t.date <= endDate);
 	},
 
-	importTransactions: async (data: string, format = "json") => {
+	importTransactions: async (data: string, format: "json" | "csv" = "json") => {
 		const result: BulkTransactionResult = {
 			success: false,
 			processed: 0,
@@ -553,17 +565,43 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 		};
 
 		try {
-			let transactions: Partial<Transaction>[];
+			// Import DataTransformUtils for enhanced validation
+			const { DataTransformUtils } = await import(
+				"../lib/transactions/dataTransform"
+			);
 
-			if (format === "json") {
-				transactions = JSON.parse(data);
-			} else {
-				// CSV parsing would go here
-				throw new Error("CSV import not implemented");
+			// Use enhanced validation with options
+			const validationResult = DataTransformUtils.processImportData(
+				data,
+				format,
+				{
+					allowDuplicates: false,
+					skipInvalidRows: true,
+					maxFileSize: 10 * 1024 * 1024, // 10MB
+				},
+			);
+
+			if (!validationResult.success) {
+				result.errors.push(...validationResult.errors);
+				return result;
 			}
 
-			for (const transaction of transactions) {
+			// Add warnings to errors for user visibility
+			if (validationResult.warnings.length > 0) {
+				result.errors.push(
+					...validationResult.warnings.map((w) => `Warning: ${w}`),
+				);
+			}
+
+			const externalTransactions = validationResult.data as any[];
+
+			// Convert external format to internal format
+			const internalTransactions =
+				DataTransformUtils.fromExternalFormatArray(externalTransactions);
+
+			for (const transaction of internalTransactions) {
 				try {
+					// Additional validation using store's validation
 					const validationErrors = await get().validateTransaction(transaction);
 					if (validationErrors.length > 0) {
 						result.failed++;
@@ -573,9 +611,25 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 						continue;
 					}
 
-					await get().createTransaction(
-						transaction as Omit<Transaction, "id" | "createdAt" | "updatedAt">,
+					// Check for existing transaction to prevent duplicates
+					const existingTransactions = get().transactions;
+					const isDuplicate = existingTransactions.some(
+						(existing) =>
+							existing.date.getTime() === transaction.date.getTime() &&
+							existing.amount === transaction.amount &&
+							existing.account === transaction.account &&
+							existing.description === transaction.description,
 					);
+
+					if (isDuplicate) {
+						result.failed++;
+						result.errors.push(
+							`Duplicate transaction skipped: ${transaction.description}`,
+						);
+						continue;
+					}
+
+					await get().createTransaction(transaction);
 					result.processed++;
 				} catch (error) {
 					result.failed++;
@@ -588,44 +642,86 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 			result.success = result.processed > 0;
 			return result;
 		} catch (error) {
-			result.errors.push(
-				error instanceof Error ? error.message : "Failed to parse import data",
-			);
+			const userError = ErrorHandler.handleError(error, {
+				component: "TransactionStore",
+				action: "importTransactions",
+			});
+			result.errors.push(userError.message);
 			return result;
 		}
 	},
 
-	exportTransactions: (transactions: Transaction[], format = "json") => {
-		if (format === "json") {
-			return JSON.stringify(transactions, null, 2);
-		}
+	exportTransactions: (
+		transactions: Transaction[],
+		format: "json" | "csv" | "external-json" = "json",
+	) => {
+		try {
+			if (format === "external-json") {
+				// Import DataTransformUtils for external format conversion
+				const {
+					DataTransformUtils,
+				} = require("../lib/transactions/dataTransform");
+				const externalFormat =
+					DataTransformUtils.toExternalFormatArray(transactions);
+				return JSON.stringify(externalFormat, null, 2);
+			}
 
-		// CSV export
-		const headers = [
-			"ID",
-			"Date",
-			"Description",
-			"Amount",
-			"Type",
-			"Category",
-			"Account",
-		];
-		const csvRows = [headers.join(",")];
+			if (format === "json") {
+				return JSON.stringify(transactions, null, 2);
+			}
 
-		for (const transaction of transactions) {
-			const row = [
-				transaction.id,
-				transaction.date.toISOString(),
-				`"${transaction.description}"`,
-				transaction.amount.toString(),
-				transaction.type,
-				transaction.category,
-				transaction.account,
+			// Enhanced CSV export with proper escaping
+			const headers = [
+				"ID",
+				"Date",
+				"Description",
+				"Amount",
+				"Type",
+				"Category",
+				"Account",
+				"Currency",
+				"Status",
+				"Note",
+				"Tags",
 			];
-			csvRows.push(row.join(","));
-		}
+			const csvRows = [headers.join(",")];
 
-		return csvRows.join("\n");
+			for (const transaction of transactions) {
+				// Helper function to escape CSV values
+				const escapeCSV = (value: any): string => {
+					if (value === null || value === undefined) return "";
+					const str = String(value);
+					// Escape quotes and wrap in quotes if contains comma, quote, or newline
+					if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+						return `"${str.replace(/"/g, '""')}"`;
+					}
+					return str;
+				};
+
+				const row = [
+					escapeCSV(transaction.id),
+					escapeCSV(transaction.date.toISOString().split("T")[0]), // Date only
+					escapeCSV(transaction.description),
+					escapeCSV(transaction.amount),
+					escapeCSV(transaction.type),
+					escapeCSV(transaction.category),
+					escapeCSV(transaction.account),
+					escapeCSV(transaction.currency || "MYR"),
+					escapeCSV(transaction.status || "completed"),
+					escapeCSV(transaction.note || ""),
+					escapeCSV(transaction.tags?.join(";") || ""),
+				];
+				csvRows.push(row.join(","));
+			}
+
+			return csvRows.join("\n");
+		} catch (error) {
+			const userError = ErrorHandler.handleError(error, {
+				component: "TransactionStore",
+				action: "exportTransactions",
+			});
+			throw new Error(userError.message);
+		}
 	},
 
 	refreshTransactions: async () => {
@@ -663,35 +759,84 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 	validateTransaction: async (transaction: Partial<Transaction>) => {
 		const errors: ValidationError[] = [];
 
-		if (!transaction.amount || transaction.amount <= 0) {
+		// Use comprehensive validation from ValidationUtils
+		const basicValidation = ValidationUtils.validateTransaction(
+			transaction as Transaction,
+		);
+		errors.push(...basicValidation);
+
+		// Additional business logic validation
+		const { categories, accounts } = get();
+
+		// Validate category exists
+		if (transaction.category) {
+			const categoryExists = categories.some(
+				(c) => c.id === transaction.category,
+			);
+			if (!categoryExists) {
+				errors.push({
+					field: "category",
+					message: "Selected category does not exist",
+					code: "INVALID_CATEGORY",
+				});
+			}
+		}
+
+		// Validate account exists
+		if (transaction.account) {
+			const accountExists = accounts.some((a) => a.id === transaction.account);
+			if (!accountExists) {
+				errors.push({
+					field: "account",
+					message: "Selected account does not exist",
+					code: "INVALID_ACCOUNT",
+				});
+			}
+		}
+
+		// Validate transaction type
+		if (
+			transaction.type &&
+			!ValidationUtils.validateTransactionType(transaction.type)
+		) {
+			errors.push({
+				field: "type",
+				message: "Transaction type must be 'income' or 'expense'",
+				code: "INVALID_TYPE",
+			});
+		}
+
+		// Validate currency if provided
+		if (
+			transaction.currency &&
+			!ValidationUtils.validateCurrency(transaction.currency)
+		) {
+			errors.push({
+				field: "currency",
+				message: "Invalid currency code",
+				code: "INVALID_CURRENCY",
+			});
+		}
+
+		// Validate date is not in the future (with some tolerance)
+		if (transaction.date) {
+			const now = new Date();
+			const maxFutureDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 1 day tolerance
+			if (transaction.date > maxFutureDate) {
+				errors.push({
+					field: "date",
+					message: "Transaction date cannot be more than 1 day in the future",
+					code: "INVALID_DATE",
+				});
+			}
+		}
+
+		// Validate amount precision (max 2 decimal places)
+		if (transaction.amount && transaction.amount % 0.01 !== 0) {
 			errors.push({
 				field: "amount",
-				message: "Amount must be greater than 0",
-				code: "INVALID_AMOUNT",
-			});
-		}
-
-		if (!transaction.description?.trim()) {
-			errors.push({
-				field: "description",
-				message: "Description is required",
-				code: "REQUIRED_FIELD",
-			});
-		}
-
-		if (!transaction.category) {
-			errors.push({
-				field: "category",
-				message: "Category is required",
-				code: "REQUIRED_FIELD",
-			});
-		}
-
-		if (!transaction.account) {
-			errors.push({
-				field: "account",
-				message: "Account is required",
-				code: "REQUIRED_FIELD",
+				message: "Amount cannot have more than 2 decimal places",
+				code: "INVALID_PRECISION",
 			});
 		}
 

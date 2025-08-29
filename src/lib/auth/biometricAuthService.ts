@@ -2,7 +2,6 @@ import type {
 	AuthResult,
 	BiometricCapabilities,
 	BiometricCredentials,
-	BiometricType,
 } from "../../types/auth";
 import { AUTH_ERROR_CODES, AUTH_STORAGE_KEYS } from "../../types/auth";
 import { CryptoUtils } from "../encryption/crypto";
@@ -240,7 +239,7 @@ export class BiometricAuthService {
 	/**
 	 * Request biometric authentication using WebAuthn API
 	 */
-	private async requestBiometricAuth(reason: string): Promise<AuthResult> {
+	private async requestBiometricAuth(_reason: string): Promise<AuthResult> {
 		try {
 			if (!window.PublicKeyCredential) {
 				return {

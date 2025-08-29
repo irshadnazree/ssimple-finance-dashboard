@@ -9,6 +9,34 @@ import { ValidationUtils } from "../calculations/finance";
 import { DatabaseService } from "../database/db";
 import { DataTransformUtils } from "./dataTransform";
 
+// Type guards for safe CSV parsing
+function isValidTransactionType(value: string): value is Transaction["type"] {
+	return value === "income" || value === "expense" || value === "transfer";
+}
+
+function isValidIncomeExpenseType(
+	value: string,
+): value is "Income" | "Expense" {
+	return value === "Income" || value === "Expense";
+}
+
+function safeParseTransactionType(value: string): Transaction["type"] {
+	const normalized = value.toLowerCase();
+	if (isValidTransactionType(normalized)) {
+		return normalized;
+	}
+	// Default fallback
+	return "expense";
+}
+
+function safeParseIncomeExpenseType(value: string): "Income" | "Expense" {
+	if (isValidIncomeExpenseType(value)) {
+		return value;
+	}
+	// Default fallback based on common patterns
+	return value.toLowerCase().includes("income") ? "Income" : "Expense";
+}
+
 export interface TransactionFilters {
 	startDate?: Date;
 	endDate?: Date;
@@ -860,12 +888,13 @@ export class TransactionManager {
 					subcategory: values[3] || undefined,
 					note: values[4] || undefined,
 					myr: Number.parseFloat(values[5]),
-					incomeExpense: values[6] as "Income" | "Expense",
+					incomeExpense: safeParseIncomeExpenseType(values[6]),
 					description: values[7],
 					amount: Number.parseFloat(values[8]),
 					currency: values[9],
 					account2: Number.parseFloat(values[10]),
-					type: values[6].toLowerCase() as Transaction["type"],
+					type: safeParseTransactionType(values[6]),
+					status: "completed",
 				};
 			}
 			// Legacy format
@@ -873,13 +902,14 @@ export class TransactionManager {
 				date: new Date(values[0]),
 				description: values[1],
 				amount: Number.parseFloat(values[2]),
-				type: values[3] as Transaction["type"],
+				type: safeParseTransactionType(values[3]),
 				category: values[4],
 				account: values[5],
 				currency: "MYR",
 				myr: Number.parseFloat(values[2]),
 				incomeExpense: values[3] === "income" ? "Income" : "Expense",
 				account2: Number.parseFloat(values[2]),
+				status: "completed",
 			};
 		});
 	}

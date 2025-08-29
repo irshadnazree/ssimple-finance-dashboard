@@ -1,13 +1,13 @@
 import {
-    AlertTriangle,
-    Eye,
-    EyeOff,
-    Fingerprint,
-    Key,
-    Lock,
-    Settings,
-    Shield,
-    Smartphone,
+	AlertTriangle,
+	Eye,
+	EyeOff,
+	Fingerprint,
+	Key,
+	Lock,
+	Settings,
+	Shield,
+	Smartphone,
 } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { biometricAuthService } from "../../lib/auth/biometricAuthService";

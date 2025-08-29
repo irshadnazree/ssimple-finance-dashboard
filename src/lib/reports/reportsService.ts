@@ -1,6 +1,5 @@
 import {
 	endOfMonth,
-	endOfYear,
 	format,
 	startOfMonth,
 	startOfYear,
@@ -9,7 +8,6 @@ import {
 } from "date-fns";
 import { useTransactionStore } from "../../stores/transactionStore";
 import type {
-	Account,
 	AccountPerformanceReport,
 	CashFlowReport,
 	Category,
@@ -20,11 +18,27 @@ import type {
 	PerformanceMetrics,
 	ReportFilters,
 	ReportMetadata,
-	ReportType,
 	Transaction,
 	TransactionAnalysisReport,
 } from "../../types/finance";
 import { DatabaseService } from "../database/db";
+
+// Helper function for safe transaction defaults
+function getDefaultTransaction(): Transaction {
+	return {
+		id: "",
+		amount: 0,
+		description: "No transaction found",
+		type: "expense",
+		category: "",
+		account: "",
+		date: new Date(),
+		status: "completed",
+		currency: "MYR",
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	};
+}
 
 export class ReportsService {
 	private static instance: ReportsService;
@@ -135,15 +149,19 @@ export class ReportsService {
 		);
 		const incomeTransactions = transactions.filter((t) => t.type === "income");
 
-		const largestExpense = expenseTransactions.reduce(
-			(max, t) => (t.amount > max.amount ? t : max),
-			expenseTransactions[0] || ({} as Transaction),
-		);
+		const largestExpense =
+			expenseTransactions.length > 0
+				? expenseTransactions.reduce((max, t) =>
+						t.amount > max.amount ? t : max,
+					)
+				: getDefaultTransaction();
 
-		const largestIncome = incomeTransactions.reduce(
-			(max, t) => (t.amount > max.amount ? t : max),
-			incomeTransactions[0] || ({} as Transaction),
-		);
+		const largestIncome =
+			incomeTransactions.length > 0
+				? incomeTransactions.reduce((max, t) =>
+						t.amount > max.amount ? t : max,
+					)
+				: getDefaultTransaction();
 
 		const metadata: ReportMetadata = {
 			id: `financial-summary-${Date.now()}`,
@@ -638,7 +656,10 @@ export class ReportsService {
 			.sort((a, b) => b.amount - a.amount);
 	}
 
-	private generateTrendData(transactions: Transaction[], dateRange: DateRange) {
+	private generateTrendData(
+		transactions: Transaction[],
+		_dateRange: DateRange,
+	) {
 		const dailyData = new Map<
 			string,
 			{ income: number; expenses: number; count: number }

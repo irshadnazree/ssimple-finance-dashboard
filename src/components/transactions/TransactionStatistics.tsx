@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { Transaction } from "../../types/finance";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -24,7 +24,7 @@ interface CategoryStat {
 	percentage: number;
 }
 
-export function TransactionStatistics({
+export const TransactionStatistics = memo(function TransactionStatistics({
 	transactions,
 	loading = false,
 }: TransactionStatisticsProps) {
@@ -358,4 +358,4 @@ export function TransactionStatistics({
 			</div>
 		</div>
 	);
-}
+});

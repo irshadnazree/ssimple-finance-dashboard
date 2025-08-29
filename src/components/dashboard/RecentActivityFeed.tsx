@@ -10,6 +10,7 @@ import type { Transaction } from "../../types/finance";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { LoadingCard } from "../ui/loading-spinner";
 
 interface ActivityItem {
 	id: string;
@@ -27,13 +28,28 @@ interface RecentActivityFeedProps {
 	className?: string;
 	recentTransactions?: Transaction[];
 	maxItems?: number;
+	loading?: boolean;
 }
 
 export function RecentActivityFeed({
 	className = "",
 	recentTransactions = [],
 	maxItems = 8,
+	loading = false,
 }: RecentActivityFeedProps) {
+	// Show loading state
+	if (loading) {
+		return (
+			<Card className={className}>
+				<CardHeader>
+					<CardTitle>Recent Activity</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<LoadingCard text="Loading recent activity..." />
+				</CardContent>
+			</Card>
+		);
+	}
 	// Convert transactions to activity items and add mock system activities
 	const transactionActivities: ActivityItem[] = recentTransactions
 		.slice(0, maxItems - 2)

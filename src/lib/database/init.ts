@@ -202,37 +202,7 @@ export namespace DatabaseInitService {
 		console.log(`Created ${defaultAccounts.length} default accounts`);
 	}
 
-	/**
-	 * Reset database to default state (for testing/development)
-	 */
-	export async function reset(): Promise<void> {
-		try {
-			// Clear all data
-			const { db } = await import("./db");
-			await db.transactions.clear();
-			await db.accounts.clear();
-			await db.categories.clear();
-			await db.preferences.clear();
 
-			// Reset initialization flag
-			initialized = false;
-
-			// Reinitialize with defaults
-			await initialize();
-
-			console.log("Database reset successfully");
-		} catch (error) {
-			console.error("Failed to reset database:", error);
-			throw error;
-		}
-	}
-
-	/**
-	 * Check if database has been initialized
-	 */
-	export function isInitialized(): boolean {
-		return initialized;
-	}
 }
 
 // Auto-initialize on import

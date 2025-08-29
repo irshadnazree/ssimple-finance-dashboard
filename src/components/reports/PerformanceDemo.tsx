@@ -2,20 +2,20 @@
 import { Activity, Database, RefreshCw, Settings, Zap } from "lucide-react";
 import { useState } from "react";
 import {
-    useComputationCache,
-    useLazyLoading,
-    usePerformanceMonitor,
+	useComputationCache,
+	useLazyLoading,
+	usePerformanceMonitor,
 } from "../../lib/hooks/useReportPerformance";
 // Performance service functionality is simulated in this demo
 import type { Transaction } from "../../types/finance";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
 } from "../ui/card";
 import { Progress } from "../ui/progress";
 
@@ -29,8 +29,11 @@ export function PerformanceDemo({ transactions }: PerformanceDemoProps) {
 	const [results, setResults] = useState<Record<string, unknown>>({});
 
 	// Performance monitoring
-	const { renderTime, renderCount, logPerformance: _logPerformance } =
-		usePerformanceMonitor("PerformanceDemo");
+	const {
+		renderTime,
+		renderCount,
+		logPerformance: _logPerformance,
+	} = usePerformanceMonitor("PerformanceDemo");
 
 	// Lazy loading demo
 	const {

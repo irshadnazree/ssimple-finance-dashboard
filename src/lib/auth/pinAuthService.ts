@@ -1,5 +1,5 @@
 import CryptoJS from "crypto-js";
-import type { AuthResult, AuthSession, PinCredentials } from "../../types/auth";
+import type { AuthResult, PinCredentials } from "../../types/auth";
 import { AUTH_ERROR_CODES, AUTH_STORAGE_KEYS } from "../../types/auth";
 import { CryptoUtils } from "../encryption/crypto";
 

@@ -2,21 +2,15 @@ import { create } from "zustand";
 import { biometricAuthService } from "../lib/auth/biometricAuthService";
 import { pinAuthService } from "../lib/auth/pinAuthService";
 import { SessionManager } from "../lib/auth/sessionManager";
-import { CryptoUtils } from "../lib/encryption/crypto";
+import { ErrorHandler } from "../lib/utils/errorHandler";
 import type {
 	AuthAttempt,
 	AuthConfig,
-	AuthErrorCode,
 	AuthEvent,
 	AuthMethod,
 	AuthResult,
 	AuthSession,
-	AuthSetupData,
 	AuthState,
-	AuthStatus,
-	BiometricCapabilities,
-	BiometricCredentials,
-	PinCredentials,
 } from "../types/auth";
 import {
 	AUTH_ERROR_CODES,
@@ -165,8 +159,12 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 			get().setupSessionManager();
 			get().startSessionMonitoring();
 		} catch (error) {
+			const userError = ErrorHandler.handleError(error, {
+				component: "AuthStore",
+				action: "initialize",
+			});
 			console.error("Failed to initialize auth service:", error);
-			throw error;
+			throw userError;
 		}
 	},
 
@@ -274,7 +272,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 			// Update state
 			const authState = {
 				...state.authState,
-				status: "unauthenticated" as AuthStatus,
+				status: "unauthenticated" as AuthState["status"],
 				method: null,
 				session: null,
 				lastAuthTime: undefined,
@@ -293,8 +291,12 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 				});
 			}
 		} catch (error) {
+			const userError = ErrorHandler.handleError(error, {
+				component: "AuthStore",
+				action: "logout",
+			});
 			console.error("Logout failed:", error);
-			throw error;
+			throw userError;
 		}
 	},
 
@@ -474,7 +476,6 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 				};
 			}
 
-			const credentials: PinCredentials = JSON.parse(storedCredentials);
 			const result = await pinAuthService.authenticate(pin);
 			const isValid = result.success;
 
@@ -521,7 +522,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 		// Update auth state
 		const authState = {
 			...state.authState,
-			status: "authenticated" as AuthStatus,
+			status: "authenticated" as AuthState["status"],
 			method: result.method,
 			session: result.session || null,
 			lastAuthTime: Date.now(),
@@ -605,7 +606,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 
 		const authState = {
 			...state.authState,
-			status: "locked" as AuthStatus,
+			status: "locked" as AuthState["status"],
 			lockedUntil,
 		};
 
@@ -636,7 +637,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 		const state = get();
 		const authState = {
 			...state.authState,
-			status: "unauthenticated" as AuthStatus,
+			status: "unauthenticated" as AuthState["status"],
 			lockedUntil: undefined,
 		};
 
@@ -701,7 +702,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 		// Update state
 		const authState = {
 			...state.authState,
-			status: "unauthenticated" as AuthStatus,
+			status: "unauthenticated" as AuthState["status"],
 			session: null,
 		};
 
@@ -750,7 +751,7 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
 			console.error("Failed to load auth state:", error);
 		}
 		return {
-			status: "setup_required" as AuthStatus,
+			status: "setup_required" as AuthState["status"],
 			method: null,
 			session: null,
 			config: DEFAULT_AUTH_CONFIG,

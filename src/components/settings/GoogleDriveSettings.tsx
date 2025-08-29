@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { SyncResult } from "../../lib/sync/googleDrive";
 import {
-    getGoogleDriveSync,
-    initializeGoogleDriveSync,
+	getGoogleDriveSync,
+	initializeGoogleDriveSync,
 } from "../../lib/sync/googleDrive";
 import { useTransactionStore } from "../../stores/transactionStore";
 import type { SyncStatus } from "../../types/finance";
@@ -267,7 +267,7 @@ export default function GoogleDriveSettings() {
 				setAutoSync(enabled);
 				setSuccess(`Auto-sync ${enabled ? "enabled" : "disabled"}`);
 			}
-		} catch (err) {
+		} catch (_err) {
 			setError("Failed to update auto-sync setting");
 		}
 	};

@@ -79,7 +79,7 @@ export default function FinanceChart({
 		} finally {
 			setLoading(false);
 		}
-	}, [timeframe, getTransactions]);
+	}, [timeframe, getTransactions, groupTransactionsByPeriod]);
 
 	const getDateKey = useCallback(
 		(date: Date, groupBy: "day" | "week" | "month"): string => {

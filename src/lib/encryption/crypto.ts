@@ -231,7 +231,7 @@ export namespace CryptoUtils {
 		// but we can at least clear the reference and suggest garbage collection
 		if (typeof sensitiveData === "string") {
 			// Create a new string to overwrite (limited effectiveness in JS)
-			const wipedData = "\0".repeat(sensitiveData.length);
+			const _wipedData = "\0".repeat(sensitiveData.length);
 			// Force garbage collection hint
 			if (typeof global !== "undefined" && global.gc) {
 				global.gc();

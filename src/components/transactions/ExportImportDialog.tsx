@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useToast } from "../../lib/hooks/useToast";
+import { ErrorHandler } from "../../lib/utils/errorHandler";
 import type { TransactionFilters } from "../../stores/transactionStore";
 import { useTransactionStore } from "../../stores/transactionStore";
 import { Alert, AlertDescription } from "../ui/alert";
-import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
@@ -58,12 +58,16 @@ export function ExportImportDialog({
 				// Get filtered transactions and export as external format
 				const transactions = getTransactions(currentFilters);
 				data = exportTransactions(transactions, "json");
-				filename = `transactions-external-${new Date().toISOString().split("T")[0]}.json`;
+				filename = `transactions-external-${
+					new Date().toISOString().split("T")[0]
+				}.json`;
 				mimeType = "application/json";
 			} else {
 				const transactions = getTransactions(currentFilters);
 				data = exportTransactions(transactions, exportFormat);
-				filename = `transactions-${new Date().toISOString().split("T")[0]}.${exportFormat}`;
+				filename = `transactions-${
+					new Date().toISOString().split("T")[0]
+				}.${exportFormat}`;
 				mimeType = exportFormat === "json" ? "application/json" : "text/csv";
 			}
 
@@ -83,11 +87,13 @@ export function ExportImportDialog({
 				description: `Transactions exported to ${filename}`,
 			});
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
+			const userError = ErrorHandler.handleError(error, {
+				component: "ExportImportDialog",
+				action: "export",
+			});
 			toast({
-				title: "Export Failed",
-				description: errorMessage,
+				title: userError.title,
+				description: userError.message,
 				variant: "destructive",
 			});
 		} finally {
@@ -140,19 +146,21 @@ export function ExportImportDialog({
 				});
 			}
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Unknown error";
+			const userError = ErrorHandler.handleError(error, {
+				component: "ExportImportDialog",
+				action: "import",
+			});
 			const importResult: ImportResult = {
 				success: false,
 				fileName: selectedFile.name,
 				recordsProcessed: 0,
-				errorMessage,
+				errorMessage: userError.message,
 			};
 			setImportResult(importResult);
 
 			toast({
-				title: "Import Failed",
-				description: errorMessage,
+				title: userError.title,
+				description: userError.message,
 				variant: "destructive",
 			});
 		} finally {

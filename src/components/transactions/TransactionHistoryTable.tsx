@@ -3,7 +3,8 @@ import type { Transaction } from "../../types/finance";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { LoadingCard, LoadingSpinner } from "../ui/loading-spinner";
+import { LoadingSpinner } from "../ui/loading-spinner";
+import { TableSkeleton } from "../ui/skeleton";
 
 interface TransactionHistoryTableProps {
 	transactions: Transaction[];
@@ -122,10 +123,16 @@ export function TransactionHistoryTable({
 
 	if (loading) {
 		return (
-			<LoadingCard
-				text="Loading transactions..."
-				className="bg-card/60 backdrop-blur-sm border-border/50"
-			/>
+			<Card className="bg-card/60 backdrop-blur-sm border-border/50">
+				<CardHeader>
+					<CardTitle className="font-mono uppercase tracking-wider">
+						Transaction History
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<TableSkeleton columns={8} rows={itemsPerPage} />
+				</CardContent>
+			</Card>
 		);
 	}
 

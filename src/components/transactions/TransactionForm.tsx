@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ValidationUtils } from "../../lib/calculations/finance";
 import { useToast } from "../../lib/hooks/useToast";
+import { ErrorHandler } from "../../lib/utils/errorHandler";
 import { useTransactionStore } from "../../stores/transactionStore";
 import type {
 	Account,
@@ -76,7 +77,7 @@ export function TransactionForm({
 
 	// Auto-suggest category based on description
 	useEffect(() => {
-		const suggestCategory = async () => {
+		const handleCategorySuggestion = async () => {
 			if (
 				formData.description &&
 				formData.description.length > 3 &&
@@ -89,16 +90,25 @@ export function TransactionForm({
 					);
 					setSuggestedCategory(suggested);
 				} catch (error) {
-					console.warn("Failed to suggest category:", error);
+					const userError = ErrorHandler.handleError(error, {
+						component: "TransactionForm",
+						action: "categorySuggestion",
+					});
+					console.warn("Failed to suggest category:", userError.message);
 				}
 			} else {
 				setSuggestedCategory(null);
 			}
 		};
 
-		const timeoutId = setTimeout(suggestCategory, 500);
+		const timeoutId = setTimeout(handleCategorySuggestion, 500);
 		return () => clearTimeout(timeoutId);
-	}, [formData.description, formData.amount, formData.category]);
+	}, [
+		formData.description,
+		formData.amount,
+		formData.category,
+		suggestCategory,
+	]);
 
 	const handleInputChange = (
 		field: keyof Transaction,
@@ -125,7 +135,9 @@ export function TransactionForm({
 			toast({
 				variant: "destructive",
 				title: "Validation Error",
-				description: `Please fix ${validationErrors.length} error${validationErrors.length > 1 ? "s" : ""} before submitting.`,
+				description: `Please fix ${validationErrors.length} error${
+					validationErrors.length > 1 ? "s" : ""
+				} before submitting.`,
 			});
 			return;
 		}
@@ -135,25 +147,31 @@ export function TransactionForm({
 
 		try {
 			await onSubmit(formData);
+			setErrors([]);
 			toast({
-				variant: "success",
 				title: "Success",
-				description: `Transaction ${transaction ? "updated" : "created"} successfully.`,
+				description: `Transaction ${
+					transaction ? "updated" : "created"
+				} successfully.`,
 			});
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Failed to save transaction";
+			const userError = ErrorHandler.handleError(error, {
+				component: "TransactionForm",
+				action: transaction ? "update" : "create",
+			});
+
 			setErrors([
 				{
 					field: "general",
-					message: errorMessage,
+					message: userError.message,
 					code: "SUBMIT_ERROR",
 				},
 			]);
+
 			toast({
 				variant: "destructive",
-				title: "Error",
-				description: errorMessage,
+				title: userError.title,
+				description: userError.message,
 			});
 		} finally {
 			setIsSubmitting(false);
@@ -249,7 +267,9 @@ export function TransactionForm({
 										Number.parseFloat(e.target.value) || 0,
 									)
 								}
-								className={`font-mono text-base sm:text-sm ${getFieldError("amount") ? "border-red-500" : ""}`}
+								className={`font-mono text-base sm:text-sm ${
+									getFieldError("amount") ? "border-red-500" : ""
+								}`}
 								placeholder="0.00"
 								disabled={loading || isSubmitting}
 							/>
@@ -284,7 +304,9 @@ export function TransactionForm({
 							type="text"
 							value={formData.description || ""}
 							onChange={(e) => handleInputChange("description", e.target.value)}
-							className={`text-base sm:text-sm ${getFieldError("description") ? "border-red-500" : ""}`}
+							className={`text-base sm:text-sm ${
+								getFieldError("description") ? "border-red-500" : ""
+							}`}
 							placeholder="Enter transaction description"
 							disabled={loading || isSubmitting}
 						/>
@@ -307,7 +329,9 @@ export function TransactionForm({
 							id="category"
 							value={formData.category || ""}
 							onChange={(e) => handleInputChange("category", e.target.value)}
-							className={`text-base sm:text-sm ${getFieldError("category") ? "border-red-500" : ""}`}
+							className={`text-base sm:text-sm ${
+								getFieldError("category") ? "border-red-500" : ""
+							}`}
 							disabled={loading || isSubmitting}
 						>
 							<option value="">Select a category</option>
@@ -362,7 +386,9 @@ export function TransactionForm({
 							id="account"
 							value={formData.account || ""}
 							onChange={(e) => handleInputChange("account", e.target.value)}
-							className={`text-base sm:text-sm ${getFieldError("account") ? "border-red-500" : ""}`}
+							className={`text-base sm:text-sm ${
+								getFieldError("account") ? "border-red-500" : ""
+							}`}
 							disabled={loading || isSubmitting}
 						>
 							<option value="">Select an account</option>
@@ -396,7 +422,9 @@ export function TransactionForm({
 							onChange={(e) =>
 								handleInputChange("date", new Date(e.target.value))
 							}
-							className={`font-mono text-base sm:text-sm ${getFieldError("date") ? "border-red-500" : ""}`}
+							className={`font-mono text-base sm:text-sm ${
+								getFieldError("date") ? "border-red-500" : ""
+							}`}
 							disabled={loading || isSubmitting}
 						/>
 						{getFieldError("date") && (
@@ -446,10 +474,10 @@ export function TransactionForm({
 									<LoadingSpinner size="sm" className="mr-2" />
 									{transaction ? "Updating..." : "Adding..."}
 								</>
+							) : transaction ? (
+								"✏️ Update Transaction"
 							) : (
-								<>
-									{transaction ? "✏️ Update Transaction" : "💾 Add Transaction"}
-								</>
+								"💾 Add Transaction"
 							)}
 						</Button>
 					</div>

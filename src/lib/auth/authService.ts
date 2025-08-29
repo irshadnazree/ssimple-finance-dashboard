@@ -1,23 +1,18 @@
-import CryptoJS from "crypto-js";
 import type {
 	AuthAttempt,
 	AuthConfig,
-	AuthErrorCode,
 	AuthEvent,
 	AuthMethod,
 	AuthResult,
 	AuthSession,
 	AuthState,
-	AuthStatus,
-	BiometricCredentials,
-	PinCredentials,
 } from "../../types/auth";
 import {
 	AUTH_ERROR_CODES,
 	AUTH_STORAGE_KEYS,
 	DEFAULT_AUTH_CONFIG,
 } from "../../types/auth";
-import { CryptoUtils } from "../encryption/crypto";
+import { logAuthEvent, logger } from "../utils/logger";
 import { SessionManager } from "./sessionManager";
 
 /**
@@ -114,7 +109,7 @@ export class AuthService {
 
 			this.saveAuthState();
 		} catch (error) {
-			console.error("Failed to initialize auth service:", error);
+			logger.error("Failed to initialize auth service", "AUTH_SERVICE", error);
 			throw error;
 		}
 	}
@@ -262,7 +257,7 @@ export class AuthService {
 				});
 			}
 		} catch (error) {
-			console.error("Logout failed:", error);
+			logger.error("Logout failed", "AUTH_SERVICE", error);
 		}
 	}
 
@@ -325,7 +320,7 @@ export class AuthService {
 
 	// Private methods
 
-	private async setupPinAuth(pin: string): Promise<AuthResult> {
+	private async setupPinAuth(_pin: string): Promise<AuthResult> {
 		// Placeholder - will be implemented by PinAuthService
 		return {
 			success: false,
@@ -349,7 +344,7 @@ export class AuthService {
 		};
 	}
 
-	private async authenticatePin(pin: string): Promise<AuthResult> {
+	private async authenticatePin(_pin: string): Promise<AuthResult> {
 		// Placeholder - will be implemented by PinAuthService
 		return {
 			success: false,
@@ -389,6 +384,11 @@ export class AuthService {
 			// Start session manager monitoring
 			this.sessionManager.initialize(undefined, this);
 
+			// Log authentication success
+			logAuthEvent("authentication", true, result.session.id, {
+				method: result.method,
+			});
+
 			this.emitEvent({
 				type: "login",
 				method: result.method,
@@ -414,11 +414,22 @@ export class AuthService {
 
 		this.saveFailedAttempt(attempt);
 
+		// Log authentication failure
+		logAuthEvent("authentication", false, undefined, {
+			method,
+			errorCode,
+			attemptCount: this.authState.failedAttempts,
+		});
+
 		// Check if should lock account
 		if (
 			this.authState.failedAttempts >= this.authState.config.maxFailedAttempts
 		) {
 			this.lockAccount();
+			logAuthEvent("account_locked", false, undefined, {
+				method,
+				attemptCount: this.authState.failedAttempts,
+			});
 		}
 
 		this.saveAuthState();
@@ -433,7 +444,7 @@ export class AuthService {
 	}
 
 	private handleAuthError(method: AuthMethod, error: unknown): AuthResult {
-		console.error("Authentication error:", error);
+		logger.error("Authentication error", "AUTH_SERVICE", error);
 
 		const errorMessage =
 			error instanceof Error ? error.message : "An unknown error occurred";
@@ -481,21 +492,6 @@ export class AuthService {
 		return data ? JSON.parse(data) : null;
 	}
 
-	private createSession(method: AuthMethod): AuthSession {
-		const now = Date.now();
-		const expiresAt = now + this.authState.config.sessionTimeout * 60 * 1000;
-
-		return {
-			id: CryptoJS.lib.WordArray.random(16).toString(),
-			userId: "local_user", // For local auth, we use a fixed user ID
-			method,
-			createdAt: now,
-			expiresAt,
-			lastActivity: now,
-			isActive: true,
-		};
-	}
-
 	private isSessionValid(session: AuthSession): boolean {
 		const now = Date.now();
 		return (
@@ -504,11 +500,6 @@ export class AuthService {
 			now - session.lastActivity <
 				this.authState.config.sessionTimeout * 60 * 1000
 		);
-	}
-
-	private updateSessionActivity(session: AuthSession): void {
-		session.lastActivity = Date.now();
-		this.saveSession(session);
 	}
 
 	private startSessionMonitoring(): void {
@@ -545,7 +536,7 @@ export class AuthService {
 			try {
 				callback(event);
 			} catch (error) {
-				console.error("Error in auth event listener:", error);
+				logger.error("Error in auth event listener", "AUTH_SERVICE", error);
 			}
 		}
 	}

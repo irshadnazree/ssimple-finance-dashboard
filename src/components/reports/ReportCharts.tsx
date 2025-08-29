@@ -1,30 +1,31 @@
 import { format } from "date-fns";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import {
-    Area,
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    ComposedChart,
-    Legend,
-    Line,
-    Pie,
-    PieChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
+	Area,
+	Bar,
+	BarChart,
+	CartesianGrid,
+	Cell,
+	ComposedChart,
+	Legend,
+	Line,
+	Pie,
+	PieChart,
+	ResponsiveContainer,
+	Tooltip,
+	XAxis,
+	YAxis,
 } from "recharts";
 import type {
-    AccountPerformanceReport,
-    CashFlowReport,
-    CategoryBreakdownReport,
-    FinancialSummaryReport,
-    TransactionAnalysisReport,
+	AccountPerformanceReport,
+	CashFlowReport,
+	CategoryBreakdownReport,
+	FinancialSummaryReport,
+	TransactionAnalysisReport,
 } from "../../types/finance";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { LoadingCard } from "../ui/loading-spinner";
 
 // Color palette for charts
 const CHART_COLORS = {
@@ -124,9 +125,23 @@ function TrendIndicator({
 // Financial Summary Chart
 export function FinancialSummaryChart({
 	report,
+	loading = false,
 }: {
 	report: FinancialSummaryReport;
+	loading?: boolean;
 }) {
+	if (loading) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Financial Summary</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<LoadingCard text="Loading financial summary..." />
+				</CardContent>
+			</Card>
+		);
+	}
 	const data = [
 		{
 			name: "Income",
@@ -247,9 +262,23 @@ export function FinancialSummaryChart({
 // Transaction Analysis Trend Chart
 export function TransactionTrendChart({
 	report,
+	loading = false,
 }: {
 	report: TransactionAnalysisReport;
+	loading?: boolean;
 }) {
+	if (loading) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Transaction Trends</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<LoadingCard text="Loading transaction trends..." />
+				</CardContent>
+			</Card>
+		);
+	}
 	return (
 		<Card>
 			<CardHeader>
@@ -324,9 +353,23 @@ export function TransactionTrendChart({
 // Category Breakdown Pie Chart
 export function CategoryBreakdownChart({
 	report,
+	loading = false,
 }: {
 	report: CategoryBreakdownReport;
+	loading?: boolean;
 }) {
+	if (loading) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Category Breakdown</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<LoadingCard text="Loading category breakdown..." />
+				</CardContent>
+			</Card>
+		);
+	}
 	const expenseData = report.expenseCategories.map((category, index) => ({
 		...category,
 		color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
@@ -458,9 +501,23 @@ export function CategoryBreakdownChart({
 // Account Performance Chart
 export function AccountPerformanceChart({
 	report,
+	loading = false,
 }: {
 	report: AccountPerformanceReport;
+	loading?: boolean;
 }) {
+	if (loading) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Account Performance</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<LoadingCard text="Loading account performance..." />
+				</CardContent>
+			</Card>
+		);
+	}
 	const chartData = report.accounts.map((account) => ({
 		name: account.name,
 		startingBalance: account.startingBalance,
@@ -521,7 +578,25 @@ export function AccountPerformanceChart({
 }
 
 // Cash Flow Chart
-export function CashFlowChart({ report }: { report: CashFlowReport }) {
+export function CashFlowChart({
+	report,
+	loading = false,
+}: {
+	report: CashFlowReport;
+	loading?: boolean;
+}) {
+	if (loading) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Cash Flow Analysis</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<LoadingCard text="Loading cash flow analysis..." />
+				</CardContent>
+			</Card>
+		);
+	}
 	return (
 		<Card>
 			<CardHeader>
@@ -588,9 +663,23 @@ interface PerformanceMetrics {
 
 export function PerformanceMetricsChart({
 	metrics,
+	loading = false,
 }: {
 	metrics: PerformanceMetrics;
+	loading?: boolean;
 }) {
+	if (loading) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Performance Metrics</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<LoadingCard text="Loading performance metrics..." />
+				</CardContent>
+			</Card>
+		);
+	}
 	const metricsData = [
 		{
 			name: "Savings Rate",

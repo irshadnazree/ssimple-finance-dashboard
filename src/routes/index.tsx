@@ -13,7 +13,6 @@ import {
 import { Button } from "../components/ui/button";
 import { useTransactionStore } from "../stores/transactionStore";
 import { useUIStore } from "../stores/uiStore";
-import type { Transaction } from "../types/finance";
 
 export const Route = createFileRoute("/")({ component: Dashboard });
 

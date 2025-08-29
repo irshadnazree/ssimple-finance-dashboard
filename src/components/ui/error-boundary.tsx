@@ -1,4 +1,5 @@
-import React, { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { logger } from "../../lib/utils/logger";
 import { Alert, AlertDescription, AlertTitle } from "./alert";
 import { Button } from "./button";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
@@ -24,7 +25,14 @@ class ErrorBoundary extends Component<Props, State> {
 	}
 
 	public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-		console.error("ErrorBoundary caught an error:", error, errorInfo);
+		logger.error(
+			"React ErrorBoundary caught an error",
+			"ERROR_BOUNDARY",
+			error,
+		);
+		logger.debug("Error component stack", "ERROR_BOUNDARY", {
+			componentStack: errorInfo.componentStack,
+		});
 		this.props.onError?.(error, errorInfo);
 	}
 
